@@ -1,0 +1,17 @@
+package com.sp.sync_point.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class SetPinRequest {
+
+    private String phoneNumber;
+    private String pin;
+    private String confirmNewPin;
+}
