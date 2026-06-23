@@ -51,14 +51,15 @@ public class WebSecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
 
+                        // Allow preflight CORS requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         .requestMatchers( "/api/v1/register-user").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/setup").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/login").permitAll()
 
-                        // Allow preflight CORS requests
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Allow public endpoints
                         .requestMatchers("/public/**").permitAll()
                         // Allow Swagger/OpenAPI docs
@@ -102,7 +103,8 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(List.of(
-                "https://*.thewealthmarket.com",
+                "https://sync-point-client.onrender.com",
+                "https://*.onrender.com",
                 "http://localhost:*"
         ));
 

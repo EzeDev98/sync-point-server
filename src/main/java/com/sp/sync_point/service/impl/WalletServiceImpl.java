@@ -76,10 +76,6 @@ public class WalletServiceImpl implements WalletService {
 
         try {
 
-            if (user == null) {
-                throw new EmptyRequestException("User cannot be null", HttpStatus.BAD_REQUEST);
-            }
-
             if (user.getId() == null) {
                 throw new EmptyFieldException("User ID cannot be null", HttpStatus.BAD_REQUEST);
             }
