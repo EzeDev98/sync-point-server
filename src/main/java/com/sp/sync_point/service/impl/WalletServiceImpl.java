@@ -151,7 +151,7 @@ public class WalletServiceImpl implements WalletService {
         walletRepository.save(wallet);
 
         log.info("Wallet login successful for user ID: {}", user.getUserRefId());
-        return new LoginResponse(accessTokenResponse.getToken(), request.getPhoneNumber(), user.getUsername(), user.getEmail(), user.getUserRefId(), wallet.getWalletId(), wallet.getMirrorBalance(), user.getId(), user.getFirstName(), user.getMiddleName(), user.getLastName(), wallet.getOfflineLimit(), wallet.isStatus());
+        return new LoginResponse(accessTokenResponse.getToken(), accessTokenResponse.getRefreshToken(), accessTokenResponse.getExpiresIn(), accessTokenResponse.getRefreshExpiresIn(), request.getPhoneNumber(), user.getUsername(), user.getEmail(), user.getUserRefId(), wallet.getWalletId(), wallet.getMirrorBalance(), user.getId(), user.getFirstName(), user.getMiddleName(), user.getLastName(), wallet.getOfflineLimit(), wallet.isStatus());
     }
 
     @Transactional

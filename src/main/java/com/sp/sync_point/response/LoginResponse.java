@@ -17,6 +17,15 @@ public class LoginResponse {
     @JsonProperty("token")
     private String token;
 
+    @JsonProperty("refreshToken")
+    private String refreshToken;
+
+    @JsonProperty("accessTokenExpiresIn")
+    private Long accessTokenExpiresIn;
+
+    @JsonProperty("refreshTokenExpiresIn")
+    private Long refreshTokenExpiresIn;
+
     @JsonProperty("phone_number")
     private String phoneNumber;
 

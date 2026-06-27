@@ -54,11 +54,11 @@ public class WebSecurityConfig {
                         // Allow preflight CORS requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers( "/api/v1/register-user").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/v1/wallet/setup").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/v1/register-user").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/login").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/v1/wallet/refresh-token").permitAll()
 
                         // Allow public endpoints
                         .requestMatchers("/public/**").permitAll()
