@@ -1,5 +1,6 @@
 # Local properties
 application.properties
+application-prod.properties
 
 # Maven
 target/

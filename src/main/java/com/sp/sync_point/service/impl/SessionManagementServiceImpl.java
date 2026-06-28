@@ -53,6 +53,21 @@ public class SessionManagementServiceImpl implements SessionManagementService {
     }
 
     @Override
+    @Transactional
+    public void updateSessionToken(String oldToken, String newToken) {
+        userSessionRepository.findByToken(oldToken)
+                .ifPresentOrElse(
+                        session -> {
+                            session.setToken(newToken);
+                            session.setCreatedAt(LocalDateTime.now());
+                            userSessionRepository.save(session);
+                            log.info("Session token updated for user: {}", session.getPhoneNumber());
+                        },
+                        () -> log.warn("No session found for old token during refresh — skipping update")
+                );
+    }
+
+    @Override
     public boolean isSessionActive(String token) {
         return userSessionRepository.findByToken(token).isPresent();
     }

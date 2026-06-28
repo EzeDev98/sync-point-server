@@ -60,6 +60,8 @@ public class WebSecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/refresh-token").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/v1/wallet/session/active").permitAll()
+
                         // Allow public endpoints
                         .requestMatchers("/public/**").permitAll()
                         // Allow Swagger/OpenAPI docs

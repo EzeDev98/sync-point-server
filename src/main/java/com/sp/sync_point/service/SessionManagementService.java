@@ -5,5 +5,6 @@ import com.sp.sync_point.model.UserSession;
 public interface SessionManagementService {
     void createSession(Long userId, String phoneNumber, String token);
     void invalidateSession(String token);
+    void updateSessionToken(String oldToken, String newToken);
     boolean isSessionActive(String token);
 }
