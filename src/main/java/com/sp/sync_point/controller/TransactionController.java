@@ -26,7 +26,7 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @Operation(method = "POST", summary = "Sync transaction", description = "This endpoint is in charge of transactions syncing in the offline payment.")
-    @PostMapping("/sync-transaction")
+    @PostMapping("/wallet/sync-transaction")
     public BaseResponse syncTransactions(@RequestBody List<SyncTransactionRequest> transactions) {
         return transactionService.syncTransactions(transactions);
     }
