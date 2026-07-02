@@ -23,8 +23,8 @@ import java.time.LocalDateTime;
         name = "transactions",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_request_ref",
-                        columnNames = {"request_ref"}
+                        name = "uk_request_ref_entry_type",
+                        columnNames = {"request_ref", "entry_type"}
                 )
         },
         indexes = {

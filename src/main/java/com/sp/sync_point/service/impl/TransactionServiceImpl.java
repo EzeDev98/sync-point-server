@@ -69,10 +69,6 @@ public class TransactionServiceImpl implements TransactionService {
     private final PasswordEncoder passwordEncoder;
 
 
-    public void createTransaction(SyncTransactionRequest request) {
-
-    }
-
     /**
      * Sync a batch of offline transactions from a client device.
      * <p>
