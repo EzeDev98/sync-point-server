@@ -26,13 +26,13 @@ public class TransactionController {
     private final TransactionService transactionService;
 
     @Operation(method = "POST", summary = "Sync transaction", description = "This endpoint is in charge of transactions syncing in the offline payment.")
-    @PostMapping("/sync/transactions")
+    @PostMapping("/sync-transaction")
     public BaseResponse syncTransactions(@RequestBody List<SyncTransactionRequest> transactions) {
         return transactionService.syncTransactions(transactions);
     }
 
     @Operation(method = "GET", summary = "Get all transaction", description = "This endpoint allows for getting all transactions from the offline payment database.")
-    @GetMapping("/transactions/find/all")
+    @GetMapping("/transactions/all")
     public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
         List<TransactionResponse> transactionResponses = transactionService.getAllTransactions();
         return ResponseEntity.ok(transactionResponses);
