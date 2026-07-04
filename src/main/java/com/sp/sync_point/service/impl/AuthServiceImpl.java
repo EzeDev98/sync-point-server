@@ -2,7 +2,8 @@ package com.sp.sync_point.service.impl;
 
 import com.sp.sync_point.config.auth.KeycloakConfig;
 import com.sp.sync_point.exception.AuthenticationException;
-import com.sp.sync_point.exception.KeycloakAuthenticationException;
+import com.sp.sync_point.exception.RefreshTokenInvalidException;
+import com.sp.sync_point.exception.ServiceUnavailableException;
 import com.sp.sync_point.service.AuthService;
 import org.keycloak.representations.AccessTokenResponse;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
             AccessTokenResponse tokenResponse = keycloak.refreshAccessToken(refreshToken);
             log.info("Token refresh successful");
             return tokenResponse;
-        } catch (KeycloakAuthenticationException ex) {
+        } catch (RefreshTokenInvalidException | ServiceUnavailableException ex) {
             throw ex;
         } catch (Exception ex) {
             log.error("Unexpected error during token refresh: {}", ex.getMessage());

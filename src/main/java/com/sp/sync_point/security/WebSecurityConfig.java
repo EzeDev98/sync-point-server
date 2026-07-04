@@ -58,7 +58,7 @@ public class WebSecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/login").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/v1/wallet/refresh-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh-token").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/wallet/session/active").permitAll()
 

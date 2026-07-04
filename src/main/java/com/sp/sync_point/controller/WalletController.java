@@ -69,4 +69,6 @@ public class WalletController {
         Boolean response = walletService.doesAccountExist(phoneNumber);
         return ResponseEntity.ok(response);
     }
+
+
 }

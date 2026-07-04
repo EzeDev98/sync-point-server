@@ -2,6 +2,8 @@ package com.sp.sync_point.config.auth;
 
 import com.sp.sync_point.exception.BadRequestException;
 import com.sp.sync_point.exception.KeycloakAuthenticationException;
+import com.sp.sync_point.exception.RefreshTokenInvalidException;
+import com.sp.sync_point.exception.ServiceUnavailableException;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.ProcessingException;
 import org.keycloak.OAuth2Constants;
@@ -60,6 +62,7 @@ public class KeycloakConfig {
                     .clientSecret(adminClientSecret)
                     .username(username)
                     .password(password)
+                    .scope("openid offline_access")
                     .build();
 
             AccessTokenResponse tokenResponse = keycloak.tokenManager().getAccessToken();
@@ -110,20 +113,25 @@ public class KeycloakConfig {
         RestTemplate restTemplate = new RestTemplate();
 
         try {
-
             ResponseEntity<AccessTokenResponse> response = restTemplate.postForEntity(tokenEndpoint, request, AccessTokenResponse.class);
             log.info("Keycloak token refresh successful");
             return response.getBody();
 
+        } catch (HttpClientErrorException.BadRequest e) {
+            log.warn("Refresh token rejected by Keycloak (400): {}", e.getResponseBodyAsString());
+            throw new RefreshTokenInvalidException("Refresh token expired or invalid", e);
+
         } catch (HttpClientErrorException.Unauthorized e) {
-            log.warn("Refresh token expired or invalid");
-            throw new KeycloakAuthenticationException("Refresh token expired or invalid", e);
+            log.error("Keycloak rejected client credentials during refresh: {}", e.getResponseBodyAsString());
+            throw new ServiceUnavailableException("Keycloak client authentication failed");
+
         } catch (ProcessingException e) {
             log.error("Keycloak connection error during token refresh: {}", e.getMessage(), e);
-            throw new KeycloakAuthenticationException("Cannot connect to Keycloak server", e);
+            throw new ServiceUnavailableException("Cannot connect to Keycloak server");
+
         } catch (Exception e) {
             log.error("Unexpected error during token refresh: {}", e.getMessage(), e);
-            throw new KeycloakAuthenticationException("Token refresh failed: " + e.getMessage(), e);
+            throw new ServiceUnavailableException("Token refresh failed: " + e.getMessage());
         }
     }
 }

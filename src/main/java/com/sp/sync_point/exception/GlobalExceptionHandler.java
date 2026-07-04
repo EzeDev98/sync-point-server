@@ -189,4 +189,9 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleLockAcquisitionException(LockAcquisitionException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
+
+    @ExceptionHandler(RefreshTokenInvalidException.class)
+    public ProblemDetail handleRefreshTokenInvalidException(RefreshTokenInvalidException ex){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
 }
