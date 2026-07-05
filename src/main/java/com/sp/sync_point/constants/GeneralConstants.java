@@ -66,6 +66,8 @@ public class GeneralConstants {
 
     public static final BigDecimal OFFLINE_LIMIT = BigDecimal.valueOf(1000000);
 
+    public static final long SESSION_TTL_DAYS = 60;
+
 
     private GeneralConstants() {
         throw new UnsupportedOperationException("General constant class and cannot be instantiated");

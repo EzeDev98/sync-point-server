@@ -194,4 +194,9 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleRefreshTokenInvalidException(RefreshTokenInvalidException ex){
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
+
+    @ExceptionHandler(ActiveSessionExistsException.class)
+    public ProblemDetail handleActiveSessionExistsException(ActiveSessionExistsException ex){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
 }

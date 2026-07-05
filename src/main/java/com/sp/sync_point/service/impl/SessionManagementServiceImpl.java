@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+import static com.sp.sync_point.constants.GeneralConstants.SESSION_TTL_DAYS;
+
 @Service
 public class SessionManagementServiceImpl implements SessionManagementService {
 
@@ -54,21 +56,31 @@ public class SessionManagementServiceImpl implements SessionManagementService {
 
     @Override
     @Transactional
-    public void updateSessionToken(String oldToken, String newToken) {
-        userSessionRepository.findByToken(oldToken)
+    public void updateSessionOnRefresh(String phoneNumber, String newToken) {
+        userSessionRepository.findByPhoneNumberAndIsActiveTrue(phoneNumber)
                 .ifPresentOrElse(
                         session -> {
                             session.setToken(newToken);
                             session.setCreatedAt(LocalDateTime.now());
                             userSessionRepository.save(session);
-                            log.info("Session token updated for user: {}", session.getPhoneNumber());
+                            log.info("Session refreshed and TTL reset for user: {}", phoneNumber);
                         },
-                        () -> log.warn("No session found for old token during refresh — skipping update")
+                        () -> log.warn("No active session found for {} during refresh — nothing to update", phoneNumber)
                 );
     }
 
     @Override
-    public boolean isSessionActive(String token) {
-        return userSessionRepository.findByToken(token).isPresent();
+    @Transactional
+    public boolean hasActiveSession(String phoneNumber) {
+        return userSessionRepository.findByPhoneNumberAndIsActiveTrue(phoneNumber)
+                .map(session -> {
+                    LocalDateTime expiryThreshold = session.getCreatedAt().plusDays(SESSION_TTL_DAYS);
+                    if (LocalDateTime.now().isAfter(expiryThreshold)) {
+                        log.info("Session for {} exceeded {}-day TTL — treating as stale, clearing row", phoneNumber, SESSION_TTL_DAYS);
+                        userSessionRepository.delete(session);
+                        return false;
+                    }
+                    return true;
+                }).orElse(false);
     }
 }

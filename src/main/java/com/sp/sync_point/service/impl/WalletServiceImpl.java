@@ -132,7 +132,6 @@ public class WalletServiceImpl implements WalletService {
             incrementLoginAttempt(wallet);
 
             log.warn("Invalid login attempt for phone: {}. Attempt {} of {}", request.getPhoneNumber(), wallet.getLoginAttempts(), MAX_LOGIN_ATTEMPTS);
-
             if (wallet.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
                 lockWallet(wallet, WALLET_LOCKED_DURATION);
                 throw new WalletLockedException("Wallet locked due to too many failed attempts. Try again later.", WALLET_LOCKED_DURATION);
@@ -141,12 +140,15 @@ public class WalletServiceImpl implements WalletService {
             throw new UnauthorizedException("Invalid phone number or password");
         }
 
-        AccessTokenResponse accessTokenResponse = authService.authenticateUser(user.getUsername(), request.getPassword());
+        if (sessionManagementService.hasActiveSession(request.getPhoneNumber())) {
+            log.warn("Login blocked for phone: {} — active session exists on another device", request.getPhoneNumber());
+            throw new ActiveSessionExistsException("This account is currently active on another device. Please unlock and log out on that device before signing in here.");
+        }
 
+        AccessTokenResponse accessTokenResponse = authService.authenticateUser(user.getUsername(), request.getPassword());
         resetLoginAttempts(wallet);
 
         sessionManagementService.createSession(user.getId(), request.getPhoneNumber(), accessTokenResponse.getToken());
-
         wallet.setStatus(true);
         walletRepository.save(wallet);
 
