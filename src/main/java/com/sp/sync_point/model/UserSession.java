@@ -34,4 +34,11 @@ public class UserSession {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "ended_at")
+    private LocalDateTime endedAt;
+
+    @Column(name = "end_reason", length = 50)
+    private String endReason;
+
 }

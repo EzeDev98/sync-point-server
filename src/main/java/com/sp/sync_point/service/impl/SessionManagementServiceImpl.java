@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
-import static com.sp.sync_point.constants.GeneralConstants.SESSION_TTL_DAYS;
+import static com.sp.sync_point.constants.GeneralConstants.*;
 
 @Service
 public class SessionManagementServiceImpl implements SessionManagementService {
@@ -26,10 +26,7 @@ public class SessionManagementServiceImpl implements SessionManagementService {
     @Transactional
     public void createSession(Long userId, String phoneNumber, String token) {
         userSessionRepository.findByPhoneNumberAndIsActiveTrue(phoneNumber)
-                .ifPresent(existing -> {
-                    userSessionRepository.delete(existing);
-                    log.info("Deleted previous session for user: {}", phoneNumber);
-                });
+                .ifPresent(existing -> closeSession(existing, REPLACED_BY_NEW_LOGIN));
 
         UserSession session = new UserSession();
         session.setUserId(userId);
@@ -39,6 +36,7 @@ public class SessionManagementServiceImpl implements SessionManagementService {
         session.setCreatedAt(LocalDateTime.now());
 
         userSessionRepository.save(session);
+        log.info("New session created for user: {}", phoneNumber);
     }
 
     @Override
@@ -47,8 +45,8 @@ public class SessionManagementServiceImpl implements SessionManagementService {
         userSessionRepository.findByToken(token)
                 .ifPresentOrElse(
                         session -> {
-                            userSessionRepository.delete(session);
-                            log.info("Session deleted successfully for user: {}", session.getPhoneNumber());
+                            closeSession(session, LOGOUT);
+                            log.info("Session invalidated for user: {}", session.getPhoneNumber());
                         },
                         () -> log.warn("No session found for token during logout")
                 );
@@ -76,11 +74,18 @@ public class SessionManagementServiceImpl implements SessionManagementService {
                 .map(session -> {
                     LocalDateTime expiryThreshold = session.getCreatedAt().plusDays(SESSION_TTL_DAYS);
                     if (LocalDateTime.now().isAfter(expiryThreshold)) {
-                        log.info("Session for {} exceeded {}-day TTL — treating as stale, clearing row", phoneNumber, SESSION_TTL_DAYS);
-                        userSessionRepository.delete(session);
+                        log.info("Session for {} exceeded {}-day TTL — expiring", phoneNumber, SESSION_TTL_DAYS);
+                        closeSession(session, TTL_EXPIRED);
                         return false;
                     }
                     return true;
                 }).orElse(false);
+    }
+
+    private void closeSession(UserSession session, String reason) {
+        session.setActive(false);
+        session.setEndedAt(LocalDateTime.now());
+        session.setEndReason(reason);
+        userSessionRepository.save(session);
     }
 }

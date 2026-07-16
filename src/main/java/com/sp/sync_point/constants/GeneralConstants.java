@@ -58,6 +58,12 @@ public class GeneralConstants {
 
     public static final String FAILURE_REASONS = "INSUFFICIENT BALANCE";
 
+    public static final String REPLACED_BY_NEW_LOGIN = "REPLACED_BY_NEW_LOGIN";
+
+    public static final String LOGOUT = "LOGOUT";
+
+    public static final String TTL_EXPIRED = "TTL_EXPIRED";
+
     public static final BigDecimal SYSTEM_WALLET_AMOUNT = BigDecimal.valueOf(1000000000);
 
     public static final BigDecimal FUND_AMOUNT = BigDecimal.valueOf(1000000);
