@@ -174,7 +174,7 @@ public class WalletServiceImpl implements WalletService {
                 throw new PinChangeLockedException("PIN set is temporarily locked. Try again after " + remainingMinutes + " minutes.", remainingMinutes);
             }
 
-            if (!isValidPinFormat(request.getPin())) {
+            if (isNotValidPinFormat(request.getPin())) {
                 throw new InvalidPinException("PIN must be exactly 4 digits");
             }
 
@@ -256,11 +256,11 @@ public class WalletServiceImpl implements WalletService {
                 return response;
             }
 
-            if (!isValidPinFormat(pinRequest.getPin())) {
+            if (isNotValidPinFormat(pinRequest.getPin())) {
                 return responseService.createErrorResponse(response, "New PIN must be exactly 4 digits", HttpServletResponse.SC_BAD_REQUEST);
             }
 
-            if (!isValidPinFormat(pinRequest.getOldPin())) {
+            if (isNotValidPinFormat(pinRequest.getOldPin())) {
                 return responseService.createErrorResponse(response, "Old PIN must be exactly 4 digits", HttpServletResponse.SC_BAD_REQUEST);
             }
 
@@ -363,8 +363,8 @@ public class WalletServiceImpl implements WalletService {
         }
     }
 
-    private boolean isValidPinFormat(String pin) {
-        return pin != null && pin.matches("\\d{4}");
+    private boolean isNotValidPinFormat(String pin) {
+        return pin == null || !pin.matches("\\d{4}");
     }
 
 

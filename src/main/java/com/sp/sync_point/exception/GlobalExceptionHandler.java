@@ -199,4 +199,24 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleActiveSessionExistsException(ActiveSessionExistsException ex){
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
+
+    @ExceptionHandler(OtpResendCooldownException.class)
+    public ProblemDetail handleOtpResendCooldownException(OtpResendCooldownException ex){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    @ExceptionHandler(OtpInvalidException.class)
+    public ProblemDetail handleOtpInvalidException(OtpInvalidException ex){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(OtpExpiredException.class)
+    public ProblemDetail handleOtpExpiredException(OtpExpiredException ex){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(ResetTokenInvalidException.class)
+    public ProblemDetail handleResetTokenInvalidException(ResetTokenInvalidException ex){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
 }

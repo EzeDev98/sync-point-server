@@ -50,6 +50,26 @@ public class KeycloakService {
         }
     }
 
+    /**
+     * Resets a user's Keycloak password credential as part of the
+     * password-reset flow. This updates the identity provider's copy of
+     * the credential; callers are responsible for also updating the local
+     * mirrored (BCrypt) hash on the User entity, and for invalidating any
+     * active sessions afterward.
+     */
+    public void resetPassword(String keycloakId, String newPassword) {
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(newPassword);
+        credential.setTemporary(false);
+
+        try {
+            keycloak.realm(realm).users().get(keycloakId).resetPassword(credential);
+        } catch (Exception ex) {
+            throw new RegistrationException("Failed to update password in Keycloak: " + ex.getMessage());
+        }
+    }
+
     private static UserRepresentation getUserRepresentation(RegistrationRequest request) {
         UserRepresentation user = new UserRepresentation();
         user.setUsername(request.getUsername());

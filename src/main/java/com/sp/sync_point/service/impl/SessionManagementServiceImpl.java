@@ -2,7 +2,9 @@ package com.sp.sync_point.service.impl;
 
 import com.sp.sync_point.model.UserSession;
 import com.sp.sync_point.repository.UserSessionRepository;
+import com.sp.sync_point.response.InvalidatedSessionResponse;
 import com.sp.sync_point.service.SessionManagementService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,21 @@ public class SessionManagementServiceImpl implements SessionManagementService {
                         },
                         () -> log.warn("No session found for token during logout")
                 );
+    }
+
+    @Override
+    @Transactional
+    public InvalidatedSessionResponse invalidateUserSessionByAdmin(String phoneNumber) {
+        return userSessionRepository.findByPhoneNumberAndIsActiveTrue(phoneNumber)
+                .map(session -> {
+                    closeSession(session, ADMIN_ACTION);
+                    log.info("Session invalidated by admin for user: {}", session.getPhoneNumber());
+                    return new InvalidatedSessionResponse(HttpServletResponse.SC_OK, "Session successfully invalidated for user with phone number " + phoneNumber);
+                })
+                .orElseGet(() -> {
+                    log.warn("No active session found for {} during admin invalidation — nothing to update", phoneNumber);
+                    return new InvalidatedSessionResponse(HttpServletResponse.SC_NOT_FOUND, "No active session found for user with phone number " + phoneNumber);
+                });
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.sp.sync_point.constants;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.Duration;
 
 public class GeneralConstants {
 
@@ -62,7 +64,19 @@ public class GeneralConstants {
 
     public static final String LOGOUT = "LOGOUT";
 
+    public static final String ADMIN_ACTION = "ADMIN_ACTION";
+
     public static final String TTL_EXPIRED = "TTL_EXPIRED";
+
+    public static final String COOLDOWN_KEY_PREFIX = "password-reset:otp-cooldown:";
+
+    public static final String GENERIC_REQUEST_MESSAGE = "If an account is associated with this phone number, a verification code has been sent.";
+
+    public static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
+    public static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    public static final int RESET_TOKEN_BYTES = 32;
 
     public static final BigDecimal SYSTEM_WALLET_AMOUNT = BigDecimal.valueOf(1000000000);
 
