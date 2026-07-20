@@ -62,8 +62,7 @@ public class ContiguityOtpDeliveryService implements OtpDeliveryService {
         }
 
         String recipient = toE164(phoneNumber);
-        String message = appName + ": Your password reset code is " + otp + ". It expires shortly. "
-                + "Do not share this code with anyone.";
+        String message = appName + ": Your password reset code is " + otp + ". It expires shortly. " + "Do not share this code with anyone.";
 
         try {
             String requestBody = objectMapper.writeValueAsString(Map.of(
@@ -84,11 +83,9 @@ public class ContiguityOtpDeliveryService implements OtpDeliveryService {
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 log.info("Password reset OTP sent via Contiguity for a registered phone number");
             } else {
-                log.error("Contiguity OTP send failed with status {}: {}", response.statusCode(),
-                        safeErrorSummary(response.body()));
+                log.error("Contiguity OTP send failed with status {}: {}", response.statusCode(), safeErrorSummary(response.body()));
             }
         } catch (Exception ex) {
-            // Never propagate: see class-level note on enumeration protection.
             log.error("Failed to send password reset OTP via Contiguity", ex);
         }
     }

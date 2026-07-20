@@ -51,7 +51,6 @@ public class WebSecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
 
-                        // Allow preflight CORS requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         .requestMatchers(HttpMethod.POST,"/api/v1/register-user").permitAll()
@@ -68,9 +67,8 @@ public class WebSecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/password-reset/complete").permitAll()
 
-                        // Allow public endpoints
                         .requestMatchers("/public/**").permitAll()
-                        // Allow Swagger/OpenAPI docs
+
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -81,7 +79,6 @@ public class WebSecurityConfig {
                                 "/api-docs/**"
                         ).permitAll()
 
-                        // Block malicious scanner probes
                         .requestMatchers(maliciousProbesMatcher()).denyAll()
 
                         .anyRequest().authenticated())
@@ -96,9 +93,7 @@ public class WebSecurityConfig {
     }
 
     private RequestMatcher maliciousProbesMatcher() {
-        List<String> blockedExtensions = List.of(
-                ".php", ".asp", ".aspx", ".env", ".cgi", ".sh", ".bat"
-        );
+        List<String> blockedExtensions = List.of(".php", ".asp", ".aspx", ".env", ".cgi", ".sh", ".bat");
         return request -> {
             String path = request.getRequestURI().toLowerCase();
             return blockedExtensions.stream().anyMatch(path::endsWith);

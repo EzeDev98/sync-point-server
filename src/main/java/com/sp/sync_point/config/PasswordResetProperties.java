@@ -1,7 +1,7 @@
 package com.sp.sync_point.config;
 
-import com.sp.sync_point.constants.Otp;
-import com.sp.sync_point.constants.Token;
+import com.sp.sync_point.constants.PasswordOtp;
+import com.sp.sync_point.constants.PasswordToken;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -19,6 +19,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "password-reset")
 public class PasswordResetProperties {
-    private Otp otp = new Otp();
-    private Token token = new Token();
+    private PasswordOtp otp = new PasswordOtp();
+    private PasswordToken token = new PasswordToken();
 }

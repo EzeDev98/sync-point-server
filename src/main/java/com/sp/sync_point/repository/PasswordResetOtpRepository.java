@@ -8,6 +8,5 @@ import java.util.Optional;
 
 public interface PasswordResetOtpRepository extends JpaRepository<PasswordResetOtp, Long> {
 
-    Optional<PasswordResetOtp> findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(
-            String phoneNumber, PasswordResetStatus status);
+    Optional<PasswordResetOtp> findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(String phoneNumber, PasswordResetStatus status);
 }

@@ -111,7 +111,7 @@ public class ValidateService {
         }
     }
 
-    public void validatePhoneNumberForPasswordReset(String phoneNumber) {
+    public void validatePhoneNumberFoResetOperations(String phoneNumber) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
             throw new BadRequestException("Phone number is required");
         }

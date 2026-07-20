@@ -15,4 +15,12 @@ public interface WalletService {
     boolean isWalletPinSet(String walletId);
     boolean verifyPin(String walletId, String unverifiedPin);
     boolean doesAccountExist(String phoneNumber);
+
+    /**
+     * Overwrites a wallet's PIN as part of the OTP-verified PIN-reset flow
+     * (see PinResetServiceImpl). Unlike setPin, this does not require the
+     * PIN to be unset first, and unlike changePin, it does not require the
+     * old PIN — OTP verification is the proof of ownership instead.
+     */
+    void resetPin(String phoneNumber, String newPin, String confirmNewPin);
 }

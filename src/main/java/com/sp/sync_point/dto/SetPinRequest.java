@@ -10,7 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SetPinRequest {
-
     private String phoneNumber;
     private String pin;
     private String confirmNewPin;

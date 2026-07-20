@@ -11,7 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegistrationRequest {
-
     private String firstName;
     private String middleName;
     private String lastName;

@@ -9,8 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class TokenResponse {
-    public String accessToken;
-    public String tokenType;
-    public int expiresIn;
+public class PinResetResponse {
+    private String message;
+    private int statusCode;
 }

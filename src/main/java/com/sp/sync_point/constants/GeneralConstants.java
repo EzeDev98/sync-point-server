@@ -68,7 +68,9 @@ public class GeneralConstants {
 
     public static final String TTL_EXPIRED = "TTL_EXPIRED";
 
-    public static final String COOLDOWN_KEY_PREFIX = "password-reset:otp-cooldown:";
+    public static final String PASSWORD_RESET_COOLDOWN_KEY_PREFIX = "password-reset:otp-cooldown:";
+
+    public static final String PIN_RESET_COOLDOWN_KEY_PREFIX = "pin-reset:otp-cooldown:";
 
     public static final String GENERIC_REQUEST_MESSAGE = "If an account is associated with this phone number, a verification code has been sent.";
 

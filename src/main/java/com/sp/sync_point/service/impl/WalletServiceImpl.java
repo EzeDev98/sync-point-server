@@ -348,6 +348,44 @@ public class WalletServiceImpl implements WalletService {
         return passwordEncoder.matches(unverifiedPin, wallet.getPin());
     }
 
+    /**
+     * Overwrites a wallet's PIN as part of the OTP-verified PIN-reset flow.
+     * Reuses the same private hashing/validation helpers as setPin, but
+     * skips the "PIN already set" guard (the whole point here is
+     * overwriting a forgotten one) and requires no old PIN, since
+     * PinResetServiceImpl has already proven ownership via OTP.
+     */
+    @Transactional
+    @Override
+    public void resetPin(String phoneNumber, String newPin, String confirmNewPin) {
+
+        Wallet wallet = walletRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new NotFoundException("No wallet found for the phone number provided: " + phoneNumber));
+
+        if (isNotValidPinFormat(newPin)) {
+            throw new InvalidPinException("PIN must be exactly 4 digits");
+        }
+
+        if (isWeakPin(newPin)) {
+            throw new InvalidPinException("PIN is too weak or commonly used. Choose a stronger PIN.");
+        }
+
+        if (!newPin.equals(confirmNewPin)) {
+            throw new BadRequestException("PINs do not match");
+        }
+
+        wallet.setPin(hashPin(newPin));
+        wallet.setPinAttempts(0);
+        wallet.setPinChangeAttempts(0);
+        wallet.setLocked(false);
+        wallet.setLockedUntil(null);
+        wallet.setPinLastChanged(LocalDateTime.now());
+        wallet.setUpdatedAt(LocalDateTime.now());
+
+        walletRepository.save(wallet);
+        log.info("PIN reset successfully for wallet belonging to user: {}", phoneNumber);
+    }
+
 
     private String hashPin(String rawPin) {
         return passwordEncoder.encode(rawPin);

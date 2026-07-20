@@ -35,9 +35,7 @@ public class DtoMapper {
         transaction.setCurrency(request.getCurrency());
         transaction.setDescription(request.getDescription());
 
-        transaction.setCreatedAt(
-                request.getCreatedAt() != null ? request.getCreatedAt() : Instant.now()
-        );
+        transaction.setCreatedAt(request.getCreatedAt() != null ? request.getCreatedAt() : Instant.now());
         transaction.setStatus(TransactionStatus.PENDING);
 
         transaction.setSenderWalletId(request.getSenderWalletId());

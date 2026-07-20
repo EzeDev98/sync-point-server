@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Otp {
+public class PinOtp {
     private int length = 6;
     private int expirationMinutes = 5;
     private int maxAttempts = 5;

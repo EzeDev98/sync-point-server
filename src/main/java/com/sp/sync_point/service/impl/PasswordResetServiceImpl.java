@@ -34,9 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-
-import static com.sp.sync_point.constants.GeneralConstants.COOLDOWN_KEY_PREFIX;
 import static com.sp.sync_point.constants.GeneralConstants.GENERIC_REQUEST_MESSAGE;
+import static com.sp.sync_point.constants.GeneralConstants.PASSWORD_RESET_COOLDOWN_KEY_PREFIX;
 
 /**
  * Orchestrates the password-reset flow. Delegates cryptographic work to
@@ -66,10 +65,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public PasswordResetResponse requestOtp(PasswordResetRequestDto request) {
-        validateService.validatePhoneNumberForPasswordReset(request.getPhoneNumber());
+        validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
         String phoneNumber = request.getPhoneNumber();
 
-        RBucket<String> cooldownBucket = redissonClient.getBucket(COOLDOWN_KEY_PREFIX + phoneNumber);
+        RBucket<String> cooldownBucket = redissonClient.getBucket(PASSWORD_RESET_COOLDOWN_KEY_PREFIX + phoneNumber);
         if (cooldownBucket.isExists()) {
             long remainingSeconds = cooldownBucket.remainTimeToLive() / 1000;
             throw new OtpResendCooldownException("Please wait before requesting another code.", Math.max(remainingSeconds, 1));
@@ -111,12 +110,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public VerifyOtpResponse verifyOtp(VerifyOtpRequest request) {
-        validateService.validatePhoneNumberForPasswordReset(request.getPhoneNumber());
+        validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
         validateService.validateOtpFormat(request.getOtp(), properties.getOtp().getLength());
 
         String phoneNumber = request.getPhoneNumber();
-        PasswordResetOtp otpEntity = passwordResetOtpRepository
-                .findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
+        PasswordResetOtp otpEntity = passwordResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
                 .orElseThrow(() -> new OtpInvalidException("The verification code is invalid."));
 
         if (LocalDateTime.now().isAfter(otpEntity.getExpiresAt())) {
@@ -130,8 +128,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             otpEntity.setStatus(PasswordResetStatus.INVALIDATED);
             otpEntity.setInvalidatedAt(LocalDateTime.now());
             passwordResetOtpRepository.save(otpEntity);
-            throw new MaxAttemptsExceededException(
-                    "Too many failed attempts. Please request a new verification code.");
+            throw new MaxAttemptsExceededException("Too many failed attempts. Please request a new verification code.");
         }
 
         boolean matches = otpService.matchesOtp(request.getOtp(), otpEntity.getOtpHash());
@@ -145,8 +142,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             passwordResetOtpRepository.save(otpEntity);
 
             if (nowExhausted) {
-                throw new MaxAttemptsExceededException(
-                        "Too many failed attempts. Please request a new verification code.");
+                throw new MaxAttemptsExceededException("Too many failed attempts. Please request a new verification code.");
             }
             throw new OtpInvalidException("The verification code is invalid.");
         }
@@ -177,8 +173,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         String tokenHash = otpService.hashResetToken(request.getResetToken());
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new ResetTokenInvalidException(
-                        "Your password reset session has expired. Please start again."));
+                .orElseThrow(() -> new ResetTokenInvalidException("Your password reset session has expired. Please start again."));
 
         if (resetToken.isUsed() || LocalDateTime.now().isAfter(resetToken.getExpiresAt())) {
             throw new ResetTokenInvalidException("Your password reset session has expired. Please start again.");
