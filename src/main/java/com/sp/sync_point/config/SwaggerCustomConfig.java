@@ -31,9 +31,9 @@ public class SwaggerCustomConfig {
                                 .name("License of API")
                                 .url("API license URL")))
                 .servers(Arrays.asList(
-//                        new Server()
-//                                .url("http://localhost:2000")
-//                                .description("Local Development Server"),
+                        new Server()
+                                .url("http://localhost:2000")
+                                .description("Local Development Server"),
                         new Server()
                                 .url("https://sync-point-server.onrender.com")
                                 .description("Production Server")
