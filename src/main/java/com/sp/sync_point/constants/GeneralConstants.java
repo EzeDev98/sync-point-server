@@ -90,6 +90,18 @@ public class GeneralConstants {
 
     public static final long SESSION_TTL_DAYS = 60;
 
+    public static final int LOGIN_RATE_LIMIT_DURATION = 15;
+
+    public static final int RESET_PASSWORD_RATE_LIMIT_DURATION = 24;
+
+    public static final int RESET_PIN_RATE_LIMIT_DURATION = 24;
+
+    public static final int MAX_LOGIN_REQUEST = 15;
+
+    public static final int MAX_RESET_PASSWORD_REQUEST = 5;
+
+    public static final int MAX_RESET_PIN_REQUEST = 5;
+
 
     private GeneralConstants() {
         throw new UnsupportedOperationException("General constant class and cannot be instantiated");

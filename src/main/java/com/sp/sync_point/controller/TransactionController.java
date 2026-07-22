@@ -32,6 +32,7 @@ public class TransactionController {
     }
 
     @Operation(method = "GET", summary = "Get all transaction", description = "This endpoint allows for getting all transactions from the offline payment database.")
+    @PreAuthorize("@rolesEvaluator.getAllTransactions(authentication)")
     @GetMapping("/transactions/all")
     public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
         List<TransactionResponse> transactionResponses = transactionService.getAllTransactions();
@@ -57,6 +58,7 @@ public class TransactionController {
     }
 
     @Operation(method = "DELETE", summary = "Delete all transactions", description = "This endpoint allows for the deletion of all transactions in the offline payment database.")
+    @PreAuthorize("@rolesEvaluator.deleteTransactions(authentication)")
     @DeleteMapping("/delete/all/transactions")
     public String deleteAllTransactions() {
         return transactionService.deleteTransactions();

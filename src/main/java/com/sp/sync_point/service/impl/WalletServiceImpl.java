@@ -61,6 +61,8 @@ public class WalletServiceImpl implements WalletService {
     private final WalletFundingRecordRepository walletFundingRecordRepo;
     private final TransactionUtils transactionUtils;
     private final TransactionRepository transactionRepo;
+    private final CurrentUserService currentUserService;
+    private final WalletLockoutService walletLockoutService;
 
     @Timed(value = "wallet.setup", description = "Time taken to setup wallet")
     @Retryable(
@@ -129,11 +131,10 @@ public class WalletServiceImpl implements WalletService {
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            incrementLoginAttempt(wallet);
+            int attempts = walletLockoutService.recordFailedLoginAttempt(request.getPhoneNumber());
 
-            log.warn("Invalid login attempt for phone: {}. Attempt {} of {}", request.getPhoneNumber(), wallet.getLoginAttempts(), MAX_LOGIN_ATTEMPTS);
-            if (wallet.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
-                lockWallet(wallet, WALLET_LOCKED_DURATION);
+            log.warn("Invalid login attempt for phone: {}. Attempt {} of {}", request.getPhoneNumber(), attempts, MAX_LOGIN_ATTEMPTS);
+            if (attempts >= MAX_LOGIN_ATTEMPTS) {
                 throw new WalletLockedException("Wallet locked due to too many failed attempts. Try again later.", WALLET_LOCKED_DURATION);
             }
 
@@ -159,6 +160,8 @@ public class WalletServiceImpl implements WalletService {
     @Transactional
     @Override
     public BaseResponse setPin(SetPinRequest request) {
+        currentUserService.assertOwnsPhoneNumber(request.getPhoneNumber());
+
         try {
             validateService.setPinValidation(request);
 
@@ -183,10 +186,10 @@ public class WalletServiceImpl implements WalletService {
             }
 
             if (!request.getPin().equals(request.getConfirmNewPin())) {
-                incrementPinChangeAttempt(wallet);
-                log.warn("PIN mismatch for user: {}. Attempt: {}", request.getPhoneNumber(), wallet.getPinChangeAttempts());
+                int attempts = walletLockoutService.recordFailedPinChangeAttempt(request.getPhoneNumber());
+                log.warn("PIN mismatch for user: {}. Attempt: {}", request.getPhoneNumber(), attempts);
 
-                if (wallet.getPinChangeAttempts() >= 3) {
+                if (attempts >= MAX_PIN_CHANGE_ATTEMPTS) {
                     throw new PinChangeLockedException("Too many failed PIN set attempts. Locked for 15 minutes.", 15);
                 }
 
@@ -251,6 +254,8 @@ public class WalletServiceImpl implements WalletService {
         }
 
         String phoneNumber = pinRequest.getPhoneNumber();
+        currentUserService.assertOwnsPhoneNumber(phoneNumber);
+
         try {
             if (!validateService.validateRequiredFields(response, phoneNumber, pinRequest.getPin(), pinRequest.getOldPin())) {
                 return response;
@@ -268,7 +273,7 @@ public class WalletServiceImpl implements WalletService {
                 return responseService.createErrorResponse(response, "PIN is too weak or commonly used. Choose a stronger PIN.", HttpServletResponse.SC_BAD_REQUEST);
             }
 
-            Wallet wallet = walletRepository.findByPhoneNumber(phoneNumber)
+            Wallet wallet = walletRepository.findByPhoneNumberWithLock(phoneNumber)
                     .orElseThrow(() -> new NotFoundException("No wallet found for the provided phone number " + phoneNumber));
 
             if (isWalletLocked(wallet)) {
@@ -331,6 +336,8 @@ public class WalletServiceImpl implements WalletService {
             throw new TransactionPinNotSetException("Wallet not found with id: " + walletId);
         }
 
+        currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
+
         return wallet.getPin() != null;
     }
 
@@ -345,6 +352,9 @@ public class WalletServiceImpl implements WalletService {
         if (wallet == null || wallet.getPin() == null) {
             return false;
         }
+
+        currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
+
         return passwordEncoder.matches(unverifiedPin, wallet.getPin());
     }
 
@@ -358,8 +368,9 @@ public class WalletServiceImpl implements WalletService {
     @Transactional
     @Override
     public void resetPin(String phoneNumber, String newPin, String confirmNewPin) {
+        currentUserService.assertOwnsPhoneNumber(phoneNumber);
 
-        Wallet wallet = walletRepository.findByPhoneNumber(phoneNumber)
+        Wallet wallet = walletRepository.findByPhoneNumberWithLock(phoneNumber)
                 .orElseThrow(() -> new NotFoundException("No wallet found for the phone number provided: " + phoneNumber));
 
         if (isNotValidPinFormat(newPin)) {
@@ -486,16 +497,6 @@ public class WalletServiceImpl implements WalletService {
         return false;
     }
 
-    private void incrementLoginAttempt(Wallet wallet) {
-        Integer currentAttempts = wallet.getLoginAttempts();
-        wallet.setLoginAttempts((currentAttempts == null) ? 1 : currentAttempts + 1);
-        wallet.setLastLoginAttempt(LocalDateTime.now());
-
-        if (wallet.getLoginAttempts() >= MAX_LOGIN_ATTEMPTS) {
-            wallet.setLoginLockUntil(LocalDateTime.now().plusMinutes(WALLET_LOCKED_DURATION));
-        }
-    }
-
     private void resetLoginAttempts(Wallet wallet) {
         wallet.setLoginAttempts(0);
         wallet.setLastLoginAttempt(null);
@@ -534,11 +535,6 @@ public class WalletServiceImpl implements WalletService {
         wallet.setLastPinChangeAttempt(null);
     }
 
-    private void lockWallet(Wallet wallet, int minutes) {
-        wallet.setLocked(true);
-        wallet.setLockedUntil(LocalDateTime.now().plusMinutes(minutes));
-    }
-
     private void unlockWallet(Wallet wallet) {
         wallet.setLocked(false);
         wallet.setLockedUntil(null);
@@ -558,7 +554,7 @@ public class WalletServiceImpl implements WalletService {
         BigDecimal balanceBeforeTransfer = systemWallet.getAvailableBalance();
 
         if (balanceBeforeTransfer.compareTo(amount) < 0) {
-            throw new InsufficientBalanceException(String.format("System wallet insufficient balance. Available: %s, Required: %s", balanceBeforeTransfer, amount));
+            throw new SystemWalletInsufficientBalanceException(String.format("System wallet insufficient balance. Available: %s, Required: %s", balanceBeforeTransfer, amount));
         }
 
         systemWallet.setAvailableBalance(balanceBeforeTransfer.subtract(amount));

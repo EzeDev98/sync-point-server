@@ -4,18 +4,23 @@ package com.sp.sync_point.controller;
 import com.sp.sync_point.dto.PinRequest;
 import com.sp.sync_point.dto.SetPinRequest;
 import com.sp.sync_point.dto.UserRequest;
-import com.sp.sync_point.exception.KeycloakAuthenticationException;
+
+import com.sp.sync_point.dto.VerifyPinRequest;
 import com.sp.sync_point.response.BaseResponse;
 import com.sp.sync_point.response.LoginResponse;
 import com.sp.sync_point.service.WalletService;
+import com.sp.sync_point.service.impl.RateLimiterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.keycloak.representations.AccessTokenResponse;
-import org.springframework.http.HttpStatus;
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.time.Duration;
+
+
+import static com.sp.sync_point.constants.GeneralConstants.*;
 
 @RestController
 @RequestMapping("${app.title}")
@@ -23,14 +28,19 @@ import java.util.Map;
 public class WalletController {
 
     private final WalletService walletService;
+    private final RateLimiterService rateLimiterService;
 
-    public WalletController(WalletService walletService) {
+    public WalletController(WalletService walletService, RateLimiterService rateLimiterService) {
         this.walletService = walletService;
+        this.rateLimiterService = rateLimiterService;
     }
 
     @Operation(method = "POST", summary = "Wallet login", description = "This endpoint allows a User to successfully login to their wallet. When the login, most of the user's details are sent to the client for storage and subsequent usage.")
     @PostMapping("/wallet/login")
-    public ResponseEntity<LoginResponse> walletLogin(@RequestBody UserRequest request) {
+    public ResponseEntity<LoginResponse> walletLogin(@RequestBody UserRequest request, HttpServletRequest httpRequest) {
+        String header = httpRequest.getHeader("X-Forwarded-For");
+        String clientIp = (header != null && !header.isBlank()) ? header.split(",")[0].trim() : httpRequest.getRemoteAddr();
+        rateLimiterService.checkRateLimit("ratelimit:login:ip" + clientIp, MAX_LOGIN_REQUEST, Duration.ofMinutes(LOGIN_RATE_LIMIT_DURATION));
         LoginResponse response = walletService.walletLogin(request);
         return ResponseEntity.ok(response);
     }
@@ -49,10 +59,10 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(method = "POST", summary = "Verify Pin", description = "This endpoint allows for the verification of wallet pin existence in the offline payment app database. It returns true if it exist and matches with the request sent by the client else it returns false")
+    @Operation(method = "GET", summary = "Verify Pin", description = "This endpoint allows for the verification of wallet pin existence in the offline payment app database. It returns true if it exist and matches with the request sent by the client else it returns false")
     @GetMapping("/wallet/verify/pin")
-    public ResponseEntity<Boolean> verifyPin(@RequestParam String walletId, String unverifiedPin) {
-        Boolean isVerified = walletService.verifyPin(walletId, unverifiedPin);
+    public ResponseEntity<Boolean> verifyPin(@RequestBody VerifyPinRequest request) {
+        Boolean isVerified = walletService.verifyPin(request.getWalletId(), request.getUnverifiedPin());
         return ResponseEntity.ok(isVerified);
     }
 

@@ -1,21 +1,28 @@
 package com.sp.sync_point.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(IncorrectPinException.class)
     public ProblemDetail handleIncorrectPinException(IncorrectPinException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(InsufficientFundsException.class)
     public ProblemDetail handleInsufficientFundsException(InsufficientFundsException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
     }
 
     @ExceptionHandler(InvalidTransactionRequestException.class)
@@ -30,17 +37,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleAuthenticationException(AuthenticationException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(WalletNotFoundException.class)
     public ProblemDetail handleWalletNotFoundException(WalletNotFoundException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(TransactionsNotFoundException.class)
     public ProblemDetail handleTransactionsNotFoundException(TransactionsNotFoundException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(FailedToRetrieveTransactionBalanceException.class)
@@ -50,7 +57,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(KeycloakAuthenticationException.class)
     public ProblemDetail handleKeycloakAuthenticationException(KeycloakAuthenticationException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(InvalidPasswordException.class)
@@ -63,14 +70,9 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
-    @ExceptionHandler(AccountAlreadyExistsException.class)
-    public ProblemDetail handleAccountAlreadyExistsException(AccountAlreadyExistsException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
     @ExceptionHandler(InternalServerErrorException.class)
     public ProblemDetail handleInternalServerErrorException(InternalServerErrorException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
     @ExceptionHandler(EmptyFieldException.class)
@@ -105,7 +107,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(WalletLockedException.class)
     public ProblemDetail handleWalletLockedException(WalletLockedException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED, ex.getMessage());
     }
 
     @ExceptionHandler(PinVerificationException.class)
@@ -120,16 +122,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(PinChangeLockedException.class)
     public ProblemDetail handlePinChangeLockedException(PinChangeLockedException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED, ex.getMessage());
     }
 
     @ExceptionHandler(InvalidInputException.class)
     public ProblemDetail handleInvalidInputException(InvalidInputException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(ExternalServiceException.class)
-    public ProblemDetail handleExternalServiceException(ExternalServiceException ex){
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
@@ -140,7 +137,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InsufficientBalanceException.class)
     public ProblemDetail handleInsufficientBalance(InsufficientBalanceException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
         problem.setTitle("Insufficient Balance");
         return problem;
     }
@@ -155,14 +152,37 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDeniedException(AccessDeniedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setTitle("Access Denied");
+        return problem;
+    }
+
+    @ExceptionHandler(SystemWalletInsufficientBalanceException.class)
+    public ProblemDetail handleSystemWalletInsufficientBalance(SystemWalletInsufficientBalanceException ex) {
+        log.error("System wallet insufficient balance: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "This operation is temporarily unavailable. Please try again shortly.");
+        problem.setTitle("Service Temporarily Unavailable");
+        return problem;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(Exception ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage() != null ? ex.getMessage() : "Unexpected error occurred");
+        String traceId = UUID.randomUUID().toString();
+        log.error("[traceId={}] Unhandled exception", traceId, ex);
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred. Please try again later.");
+        problem.setProperty("traceId", traceId);
+        return problem;
     }
 
     @ExceptionHandler(AlreadyExistException.class)
     public ProblemDetail handleAlreadyExistException(AlreadyExistException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(RegistrationException.class)
@@ -177,12 +197,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxAttemptsExceededException.class)
     public ProblemDetail handleMaxAttemptsExceededException(MaxAttemptsExceededException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ProblemDetail handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(LockAcquisitionException.class)

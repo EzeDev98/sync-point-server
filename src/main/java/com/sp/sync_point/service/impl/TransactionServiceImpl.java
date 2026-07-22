@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageRequest;
@@ -31,12 +31,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -67,6 +67,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final UniqueValueGeneratorService valueGeneratorService;
     private final TransactionUtils transactionUtils;
     private final PasswordEncoder passwordEncoder;
+    private final CurrentUserService currentUserService;
 
 
     /**
@@ -282,6 +283,14 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.getSenderPhone() == null || request.getSenderPhone().isBlank()) {
             throw new BadRequestException("Sender phone number is required");
         }
+
+        // Offline-sync requests carry no PIN — the client already enforced that
+        // client-side before queuing the transaction. This ownership check is
+        // therefore the ONLY server-side proof that the caller is entitled to
+        // debit this sender's wallet; without it, any authenticated user could
+        // submit a sync batch claiming to be any other user's sender.
+        currentUserService.assertOwnsPhoneNumber(request.getSenderPhone());
+
         if (request.getReceiverPhone() == null || request.getReceiverPhone().isBlank()) {
             throw new BadRequestException("Receiver phone number is required");
         }
@@ -388,6 +397,17 @@ public class TransactionServiceImpl implements TransactionService {
             throw new EmptyFieldException("wmUniqueId cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
 
+        boolean ownsSender = walletRepository.findByWalletId(userWmUniqueId)
+                .map(w -> currentUserService.ownsPhoneNumber(w.getPhoneNumber()))
+                .orElse(false);
+        boolean ownsReceiver = walletRepository.findByWalletId(receiverWmUniqueId)
+                .map(w -> currentUserService.ownsPhoneNumber(w.getPhoneNumber()))
+                .orElse(false);
+
+        if (!ownsSender && !ownsReceiver) {
+            throw new AccessDeniedException("You do not have permission to access this resource");
+        }
+
         List<Transaction> transactions = transactionRepository.findBySenderWalletIdOrReceiverWalletId(userWmUniqueId, receiverWmUniqueId);
         if (transactions == null || transactions.isEmpty()) {
             log.error("No transactions found for user with wmUniqueId: {} and receiverWmUniqueId: {}", userWmUniqueId, receiverWmUniqueId);
@@ -403,6 +423,10 @@ public class TransactionServiceImpl implements TransactionService {
         if (wmUniqueId == null) {
             throw new EmptyFieldException("wmUniqueId cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
+
+        Wallet wallet = walletRepository.findByWalletId(wmUniqueId)
+                .orElseThrow(() -> new WalletNotFoundException("No wallet found for the ID provided"));
+        currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
 
         List<Transaction> transactions = transactionRepository.findTransactionByWalletId(wmUniqueId);
         if (transactions == null || transactions.isEmpty()) {
@@ -420,6 +444,10 @@ public class TransactionServiceImpl implements TransactionService {
             throw new EmptyFieldException("wmUniqueId cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
 
+        Wallet wallet = walletRepository.findByWalletId(wmUniqueId)
+                .orElseThrow(() -> new WalletNotFoundException("No wallet found for the ID provided"));
+        currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
+
         List<Transaction> transactions = transactionRepository.findLatestTransactionByWalletId(wmUniqueId, PageRequest.of(0, 10));
         if (transactions == null || transactions.isEmpty()) {
             log.error("No transactions found for user with wmUniqueId: {}", wmUniqueId);
@@ -432,6 +460,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public BaseResponse saveMirrorBalance(String walletId, BigDecimal amount) {
         Wallet wallet = walletRepository.findByWalletId(walletId).orElseThrow(() -> new WalletNotFoundException("No wallet found for the ID provided"));
+        currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
         wallet.setMirrorBalance(amount);
         wallet.setUpdatedAt(LocalDateTime.now());
         walletRepository.save(wallet);
@@ -457,6 +486,10 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.getRequestRef() == null || request.getRequestRef().isBlank()) {
             throw new EmptyFieldException("Request reference must not be null or empty", HttpStatus.BAD_REQUEST);
         }
+
+        // Defense in depth alongside the PIN check below: the PIN alone binds
+        // the request to *a* wallet, but not to *this* JWT's identity.
+        currentUserService.assertOwnsPhoneNumber(request.getPhoneNumber());
 
         try {
 
@@ -535,6 +568,10 @@ public class TransactionServiceImpl implements TransactionService {
         if (request.getRequestRef() == null || request.getRequestRef().isBlank()) {
             throw new EmptyFieldException("Request reference must not be null or empty", HttpStatus.BAD_REQUEST);
         }
+
+        // Defense in depth alongside the PIN check below: the PIN alone binds
+        // the request to *a* wallet, but not to *this* JWT's identity.
+        currentUserService.assertOwnsPhoneNumber(request.getPhoneNumber());
 
         try {
 

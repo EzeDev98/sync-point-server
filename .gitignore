@@ -1,5 +1,6 @@
 # Local properties
 application.properties
+application-dev.properties
 application-prod.properties
 
 # Maven
@@ -11,4 +12,4 @@ target/
 *.iml
 
 # OS
-.DS_Store
+.DS_Store.env

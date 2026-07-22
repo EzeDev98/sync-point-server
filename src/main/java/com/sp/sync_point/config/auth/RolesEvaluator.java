@@ -51,6 +51,18 @@ public class RolesEvaluator {
 
     }
 
+    public boolean getAllTransactions(Authentication authentication) {
+        log.info("Authentication object type: {}", authentication.getClass().getName());
+        log.info("Granted authorities for system endpoints: {}", authentication.getAuthorities());
+
+        Set<String> requiredRoles = Set.of(ADMIN_ROLE);
+        return authentication.getAuthorities()
+                .stream().map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet())
+                .containsAll(requiredRoles);
+
+    }
+
     public boolean saveMirrorBalance(Authentication authentication) {
         log.info("Authentication object type: {}", authentication.getClass().getName());
         log.info("Granted authorities for system endpoints: {}", authentication.getAuthorities());
@@ -85,5 +97,16 @@ public class RolesEvaluator {
                 .collect(Collectors.toSet())
                 .containsAll(requiredRoles);
 
+    }
+
+    public boolean invalidateSession(Authentication authentication) {
+        log.info("Authentication object type: {}", authentication.getClass().getName());
+        log.info("Granted authorities for system endpoints: {}", authentication.getAuthorities());
+
+        Set<String> requiredRoles = Set.of(ADMIN_ROLE);
+        return authentication.getAuthorities()
+                .stream().map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet())
+                .containsAll(requiredRoles);
     }
 }
