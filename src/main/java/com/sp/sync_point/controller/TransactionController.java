@@ -27,8 +27,9 @@ public class TransactionController {
 
     @Operation(method = "POST", summary = "Sync transaction", description = "This endpoint is in charge of transactions syncing in the offline payment.")
     @PostMapping("/wallet/sync-transaction")
-    public BaseResponse syncTransactions(@RequestBody List<SyncTransactionRequest> transactions) {
-        return transactionService.syncTransactions(transactions);
+    public ResponseEntity<BaseResponse> syncTransactions(@RequestBody List<SyncTransactionRequest> transactions) {
+        BaseResponse response = transactionService.syncTransactions(transactions);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(method = "GET", summary = "Get all transaction", description = "This endpoint allows for getting all transactions from the offline payment database.")
@@ -60,8 +61,8 @@ public class TransactionController {
     @Operation(method = "DELETE", summary = "Delete all transactions", description = "This endpoint allows for the deletion of all transactions in the offline payment database.")
     @PreAuthorize("@rolesEvaluator.deleteTransactions(authentication)")
     @DeleteMapping("/delete/all/transactions")
-    public String deleteAllTransactions() {
-        return transactionService.deleteTransactions();
+    public ResponseEntity<String> deleteAllTransactions() {
+        return ResponseEntity.ok(transactionService.deleteTransactions());
     }
 
 

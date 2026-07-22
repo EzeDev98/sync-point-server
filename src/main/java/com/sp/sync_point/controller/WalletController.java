@@ -45,7 +45,7 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(method = "PUT", summary = "set PIN", description = "This endpoint will allow users to set their transaction PIN. This is mainly for first timers")
+    @Operation(method = "POST", summary = "set PIN", description = "This endpoint will allow users to set their transaction PIN. This is mainly for first timers")
     @PostMapping("/wallet/set-pin")
     public ResponseEntity<BaseResponse> setPin(@RequestBody SetPinRequest request) {
         BaseResponse response = walletService.setPin(request);
@@ -66,19 +66,18 @@ public class WalletController {
         return ResponseEntity.ok(isVerified);
     }
 
-    @Operation(method = "POST", summary = "Verify wallet pin is set ", description = "This endpoint allows a user to verify if a user has set wallet pin in the offline payment app database. It returns true if he has already set a pin and false if not")
+    @Operation(method = "GET", summary = "Verify wallet pin is set ", description = "This endpoint allows a user to verify if a user has set wallet pin in the offline payment app database. It returns true if he has already set a pin and false if not")
     @GetMapping("/wallet/has-pin")
     public ResponseEntity<Boolean> isWalletPinSet(@RequestParam String walletId) {
         Boolean isVerified = walletService.isWalletPinSet(walletId);
         return ResponseEntity.ok(isVerified);
     }
 
-    @Operation(method = "POST", summary = "Verify offline pay account exist", description = "This endpoint allows a user to verify offline pay account exist in the database. It returns true if the account exist and false if not")
+    @Operation(method = "GET", summary = "Verify offline pay account exist", description = "This endpoint allows a user to verify offline pay account exist in the database. It returns true if the account exist and false if not")
     @GetMapping("/wallet/verify/account")
     public ResponseEntity<Boolean> doesAccountExist(@RequestParam String phoneNumber) {
         Boolean response = walletService.doesAccountExist(phoneNumber);
         return ResponseEntity.ok(response);
     }
-
 
 }
