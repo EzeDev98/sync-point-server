@@ -5,10 +5,7 @@ import com.sp.sync_point.dto.CompletePasswordResetRequest;
 import com.sp.sync_point.dto.PasswordResetRequestDto;
 import com.sp.sync_point.dto.VerifyOtpRequest;
 import com.sp.sync_point.enums.PasswordResetStatus;
-import com.sp.sync_point.exception.MaxAttemptsExceededException;
-import com.sp.sync_point.exception.OtpExpiredException;
 import com.sp.sync_point.exception.OtpInvalidException;
-import com.sp.sync_point.exception.OtpResendCooldownException;
 import com.sp.sync_point.exception.ResetTokenInvalidException;
 import com.sp.sync_point.exception.UserNotFoundException;
 import com.sp.sync_point.model.PasswordResetOtp;
@@ -31,7 +28,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import static com.sp.sync_point.constants.GeneralConstants.GENERIC_REQUEST_MESSAGE;
@@ -40,8 +36,13 @@ import static com.sp.sync_point.constants.GeneralConstants.PASSWORD_RESET_COOLDO
 /**
  * Orchestrates the password-reset flow. Delegates cryptographic work to
  * OtpService, delivery to OtpDeliveryService, identity-provider updates to
- * KeycloakService, and session invalidation to SessionManagementService —
- * this class only holds the business rules that tie those pieces together.
+ * KeycloakService, and session invalidation to SessionManagementService.
+ * The shared OTP-verification and reset-token machinery — identical to
+ * PinResetServiceImpl's, since both are the same OTP-then-token workflow
+ * applied to a different target — lives in {@link OtpResetEngine}; this
+ * class holds only the business rules specific to resetting a password:
+ * user-enumeration protection on request, and updating Keycloak + the
+ * local password mirror + sessions on completion.
  */
 @RequiredArgsConstructor
 @Service
@@ -60,7 +61,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetProperties properties;
     private final ValidateService validateService;
     private final RedissonClient redissonClient;
-
+    private final OtpResetEngine otpResetEngine;
 
     @Override
     @Transactional
@@ -68,11 +69,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
         String phoneNumber = request.getPhoneNumber();
 
-        RBucket<String> cooldownBucket = redissonClient.getBucket(PASSWORD_RESET_COOLDOWN_KEY_PREFIX + phoneNumber);
-        if (cooldownBucket.isExists()) {
-            long remainingSeconds = cooldownBucket.remainTimeToLive() / 1000;
-            throw new OtpResendCooldownException("Please wait before requesting another code.", Math.max(remainingSeconds, 1));
-        }
+        RBucket<String> cooldownBucket = otpResetEngine.getCooldownBucket(redissonClient, PASSWORD_RESET_COOLDOWN_KEY_PREFIX, phoneNumber);
+        otpResetEngine.rejectIfCoolingDown(cooldownBucket);
 
         Optional<User> userOptional = userRepository.findByPhoneNumber(phoneNumber);
 
@@ -81,19 +79,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         // response and always start the cooldown, regardless of outcome.
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            invalidateExistingActiveOtps(phoneNumber);
+            otpResetEngine.invalidateExisting(
+                    passwordResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE),
+                    passwordResetOtpRepository::save);
 
             String rawOtp = otpService.generateOtp(properties.getOtp().getLength());
 
             PasswordResetOtp otpEntity = new PasswordResetOtp();
             otpEntity.setUserId(user.getId());
-            otpEntity.setPhoneNumber(phoneNumber);
-            otpEntity.setOtpHash(otpService.hashOtp(rawOtp));
-            otpEntity.setExpiresAt(LocalDateTime.now().plusMinutes(properties.getOtp().getExpirationMinutes()));
-            otpEntity.setAttemptCount(0);
-            otpEntity.setMaxAttempts(properties.getOtp().getMaxAttempts());
-            otpEntity.setStatus(PasswordResetStatus.ACTIVE);
-            otpEntity.setLastSentAt(LocalDateTime.now());
+            otpResetEngine.populateNewOtp(otpEntity, phoneNumber, rawOtp, properties.getOtp().getExpirationMinutes(), properties.getOtp().getMaxAttempts());
             passwordResetOtpRepository.save(otpEntity);
 
             otpDeliveryService.sendPasswordResetOtp(phoneNumber, rawOtp);
@@ -102,7 +96,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             log.info("Password reset OTP requested for an unregistered phone number");
         }
 
-        cooldownBucket.set("1", Duration.ofSeconds(properties.getOtp().getResendCooldownSeconds()));
+        otpResetEngine.startCooldown(cooldownBucket, properties.getOtp().getResendCooldownSeconds());
 
         return new PasswordResetResponse(GENERIC_REQUEST_MESSAGE, 200);
     }
@@ -117,39 +111,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         PasswordResetOtp otpEntity = passwordResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
                 .orElseThrow(() -> new OtpInvalidException("The verification code is invalid."));
 
-        if (LocalDateTime.now().isAfter(otpEntity.getExpiresAt())) {
-            otpEntity.setStatus(PasswordResetStatus.EXPIRED);
-            otpEntity.setInvalidatedAt(LocalDateTime.now());
-            passwordResetOtpRepository.save(otpEntity);
-            throw new OtpExpiredException("This verification code has expired. Please request a new code.");
-        }
-
-        if (otpEntity.getAttemptCount() >= otpEntity.getMaxAttempts()) {
-            otpEntity.setStatus(PasswordResetStatus.INVALIDATED);
-            otpEntity.setInvalidatedAt(LocalDateTime.now());
-            passwordResetOtpRepository.save(otpEntity);
-            throw new MaxAttemptsExceededException("Too many failed attempts. Please request a new verification code.");
-        }
-
-        boolean matches = otpService.matchesOtp(request.getOtp(), otpEntity.getOtpHash());
-        if (!matches) {
-            otpEntity.setAttemptCount(otpEntity.getAttemptCount() + 1);
-            boolean nowExhausted = otpEntity.getAttemptCount() >= otpEntity.getMaxAttempts();
-            if (nowExhausted) {
-                otpEntity.setStatus(PasswordResetStatus.INVALIDATED);
-                otpEntity.setInvalidatedAt(LocalDateTime.now());
-            }
-            passwordResetOtpRepository.save(otpEntity);
-
-            if (nowExhausted) {
-                throw new MaxAttemptsExceededException("Too many failed attempts. Please request a new verification code.");
-            }
-            throw new OtpInvalidException("The verification code is invalid.");
-        }
-
-        otpEntity.setStatus(PasswordResetStatus.VERIFIED);
-        otpEntity.setVerifiedAt(LocalDateTime.now());
-        passwordResetOtpRepository.save(otpEntity);
+        otpResetEngine.verify(otpEntity, request.getOtp(), passwordResetOtpRepository::save);
 
         String rawResetToken = otpService.generateResetToken();
         PasswordResetToken resetToken = new PasswordResetToken();
@@ -175,9 +137,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new ResetTokenInvalidException("Your password reset session has expired. Please start again."));
 
-        if (resetToken.isUsed() || LocalDateTime.now().isAfter(resetToken.getExpiresAt())) {
-            throw new ResetTokenInvalidException("Your password reset session has expired. Please start again.");
-        }
+        otpResetEngine.assertUsable(resetToken, "Your password reset session has expired. Please start again.");
 
         User user = userRepository.findById(resetToken.getUserId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
@@ -189,23 +149,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        resetToken.setUsed(true);
-        resetToken.setUsedAt(LocalDateTime.now());
-        passwordResetTokenRepository.save(resetToken);
+        otpResetEngine.markUsed(resetToken, passwordResetTokenRepository::save);
 
         sessionManagementService.invalidateUserSessionByAdmin(user.getPhoneNumber());
 
         log.info("Password reset completed successfully for user id {}", user.getId());
         return new PasswordResetResponse("Password reset successful. Please log in with your new password.", 200);
-    }
-
-    private void invalidateExistingActiveOtps(String phoneNumber) {
-        passwordResetOtpRepository
-                .findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
-                .ifPresent(existing -> {
-                    existing.setStatus(PasswordResetStatus.INVALIDATED);
-                    existing.setInvalidatedAt(LocalDateTime.now());
-                    passwordResetOtpRepository.save(existing);
-                });
     }
 }

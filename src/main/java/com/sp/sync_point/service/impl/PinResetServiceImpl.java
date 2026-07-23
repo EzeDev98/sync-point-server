@@ -3,13 +3,9 @@ package com.sp.sync_point.service.impl;
 import com.sp.sync_point.config.PinResetProperties;
 import com.sp.sync_point.dto.CompletePinResetRequest;
 import com.sp.sync_point.dto.PinResetRequestDto;
-import com.sp.sync_point.dto.SetPinRequest;
 import com.sp.sync_point.dto.VerifyPinOtpRequest;
 import com.sp.sync_point.enums.PasswordResetStatus;
-import com.sp.sync_point.exception.MaxAttemptsExceededException;
-import com.sp.sync_point.exception.OtpExpiredException;
 import com.sp.sync_point.exception.OtpInvalidException;
-import com.sp.sync_point.exception.OtpResendCooldownException;
 import com.sp.sync_point.exception.ResetTokenInvalidException;
 import com.sp.sync_point.model.PinResetOtp;
 import com.sp.sync_point.model.PinResetToken;
@@ -21,7 +17,7 @@ import com.sp.sync_point.response.PinResetResponse;
 import com.sp.sync_point.response.VerifyOtpResponse;
 import com.sp.sync_point.service.OtpDeliveryService;
 import com.sp.sync_point.service.PinResetService;
-import com.sp.sync_point.service.WalletService;
+import com.sp.sync_point.service.WalletPinService;
 import jakarta.ws.rs.NotFoundException;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
@@ -30,18 +26,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 import static com.sp.sync_point.constants.GeneralConstants.PIN_RESET_COOLDOWN_KEY_PREFIX;
 
 /**
  * Orchestrates the wallet PIN-reset flow. Deliberately reuses OtpService,
- * OtpDeliveryService, and the shared OTP exceptions from the password-reset
- * feature — the cryptographic/delivery/error-handling machinery is
- * identical, only the domain target (Wallet.pin vs User.password/Keycloak)
- * and trust model (authenticated vs public) differ. See PinResetService
- * for a summary of those differences.
+ * OtpDeliveryService, and the shared OTP/reset-token machinery
+ * ({@link OtpResetEngine}) from the password-reset feature — the
+ * cryptographic/delivery/error-handling machinery is identical, only the
+ * domain target (Wallet.pin vs User.password/Keycloak) and trust model
+ * (authenticated vs public) differ. See PinResetService for a summary of
+ * those differences.
  */
 @Service
 public class PinResetServiceImpl implements PinResetService {
@@ -53,20 +49,22 @@ public class PinResetServiceImpl implements PinResetService {
     private final PinResetTokenRepository pinResetTokenRepository;
     private final OtpService otpService;
     private final OtpDeliveryService otpDeliveryService;
-    private final WalletService walletService;
+    private final WalletPinService walletService;
     private final PinResetProperties properties;
     private final ValidateService validateService;
     private final RedissonClient redissonClient;
+    private final OtpResetEngine otpResetEngine;
 
     public PinResetServiceImpl(WalletRepository walletRepository,
                                PinResetOtpRepository pinResetOtpRepository,
                                PinResetTokenRepository pinResetTokenRepository,
                                OtpService otpService,
                                OtpDeliveryService otpDeliveryService,
-                               WalletService walletService,
+                               WalletPinService walletService,
                                PinResetProperties properties,
                                ValidateService validateService,
-                               RedissonClient redissonClient) {
+                               RedissonClient redissonClient,
+                               OtpResetEngine otpResetEngine) {
         this.walletRepository = walletRepository;
         this.pinResetOtpRepository = pinResetOtpRepository;
         this.pinResetTokenRepository = pinResetTokenRepository;
@@ -76,6 +74,7 @@ public class PinResetServiceImpl implements PinResetService {
         this.properties = properties;
         this.validateService = validateService;
         this.redissonClient = redissonClient;
+        this.otpResetEngine = otpResetEngine;
     }
 
     @Override
@@ -87,29 +86,22 @@ public class PinResetServiceImpl implements PinResetService {
         Wallet wallet = walletRepository.findByPhoneNumber(phoneNumber)
                 .orElseThrow(() -> new NotFoundException("No wallet found for the phone number provided: " + phoneNumber));
 
-        RBucket<String> cooldownBucket = redissonClient.getBucket(PIN_RESET_COOLDOWN_KEY_PREFIX + phoneNumber);
-        if (cooldownBucket.isExists()) {
-            long remainingSeconds = cooldownBucket.remainTimeToLive() / 1000;
-            throw new OtpResendCooldownException("Please wait before requesting another code.", Math.max(remainingSeconds, 1));
-        }
+        RBucket<String> cooldownBucket = otpResetEngine.getCooldownBucket(redissonClient, PIN_RESET_COOLDOWN_KEY_PREFIX, phoneNumber);
+        otpResetEngine.rejectIfCoolingDown(cooldownBucket);
 
-        invalidateExistingActiveOtps(phoneNumber);
+        otpResetEngine.invalidateExisting(
+                pinResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE),
+                pinResetOtpRepository::save);
 
         String rawOtp = otpService.generateOtp(properties.getOtp().getLength());
 
         PinResetOtp otpEntity = new PinResetOtp();
         otpEntity.setWalletId(wallet.getId());
-        otpEntity.setPhoneNumber(phoneNumber);
-        otpEntity.setOtpHash(otpService.hashOtp(rawOtp));
-        otpEntity.setExpiresAt(LocalDateTime.now().plusMinutes(properties.getOtp().getExpirationMinutes()));
-        otpEntity.setAttemptCount(0);
-        otpEntity.setMaxAttempts(properties.getOtp().getMaxAttempts());
-        otpEntity.setStatus(PasswordResetStatus.ACTIVE);
-        otpEntity.setLastSentAt(LocalDateTime.now());
+        otpResetEngine.populateNewOtp(otpEntity, phoneNumber, rawOtp, properties.getOtp().getExpirationMinutes(), properties.getOtp().getMaxAttempts());
         pinResetOtpRepository.save(otpEntity);
 
         otpDeliveryService.sendPasswordResetOtp(phoneNumber, rawOtp);
-        cooldownBucket.set("1", Duration.ofSeconds(properties.getOtp().getResendCooldownSeconds()));
+        otpResetEngine.startCooldown(cooldownBucket, properties.getOtp().getResendCooldownSeconds());
 
         log.info("PIN reset OTP requested for wallet belonging to user: {}", phoneNumber);
         return new PinResetResponse("A verification code has been sent to your registered phone number.", 200);
@@ -125,39 +117,7 @@ public class PinResetServiceImpl implements PinResetService {
         PinResetOtp otpEntity = pinResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
                 .orElseThrow(() -> new OtpInvalidException("The verification code is invalid."));
 
-        if (LocalDateTime.now().isAfter(otpEntity.getExpiresAt())) {
-            otpEntity.setStatus(PasswordResetStatus.EXPIRED);
-            otpEntity.setInvalidatedAt(LocalDateTime.now());
-            pinResetOtpRepository.save(otpEntity);
-            throw new OtpExpiredException("This verification code has expired. Please request a new code.");
-        }
-
-        if (otpEntity.getAttemptCount() >= otpEntity.getMaxAttempts()) {
-            otpEntity.setStatus(PasswordResetStatus.INVALIDATED);
-            otpEntity.setInvalidatedAt(LocalDateTime.now());
-            pinResetOtpRepository.save(otpEntity);
-            throw new MaxAttemptsExceededException("Too many failed attempts. Please request a new verification code.");
-        }
-
-        boolean matches = otpService.matchesOtp(request.getOtp(), otpEntity.getOtpHash());
-        if (!matches) {
-            otpEntity.setAttemptCount(otpEntity.getAttemptCount() + 1);
-            boolean nowExhausted = otpEntity.getAttemptCount() >= otpEntity.getMaxAttempts();
-            if (nowExhausted) {
-                otpEntity.setStatus(PasswordResetStatus.INVALIDATED);
-                otpEntity.setInvalidatedAt(LocalDateTime.now());
-            }
-            pinResetOtpRepository.save(otpEntity);
-
-            if (nowExhausted) {
-                throw new MaxAttemptsExceededException("Too many failed attempts. Please request a new verification code.");
-            }
-            throw new OtpInvalidException("The verification code is invalid.");
-        }
-
-        otpEntity.setStatus(PasswordResetStatus.VERIFIED);
-        otpEntity.setVerifiedAt(LocalDateTime.now());
-        pinResetOtpRepository.save(otpEntity);
+        otpResetEngine.verify(otpEntity, request.getOtp(), pinResetOtpRepository::save);
 
         String rawResetToken = otpService.generateResetToken();
         PinResetToken resetToken = new PinResetToken();
@@ -181,30 +141,16 @@ public class PinResetServiceImpl implements PinResetService {
         PinResetToken resetToken = pinResetTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new ResetTokenInvalidException("Your PIN reset session has expired. Please start again."));
 
-        if (resetToken.isUsed() || LocalDateTime.now().isAfter(resetToken.getExpiresAt())) {
-            throw new ResetTokenInvalidException("Your PIN reset session has expired. Please start again.");
-        }
+        otpResetEngine.assertUsable(resetToken, "Your PIN reset session has expired. Please start again.");
 
         Wallet wallet = walletRepository.findById(resetToken.getWalletId())
                 .orElseThrow(() -> new NotFoundException("Wallet not found"));
 
         walletService.resetPin(wallet.getPhoneNumber(), request.getPin(), request.getConfirmNewPin());
 
-        resetToken.setUsed(true);
-        resetToken.setUsedAt(LocalDateTime.now());
-        pinResetTokenRepository.save(resetToken);
+        otpResetEngine.markUsed(resetToken, pinResetTokenRepository::save);
 
         log.info("PIN reset completed successfully for wallet id {}", wallet.getId());
         return new PinResetResponse("PIN reset successful.", 200);
-    }
-
-    private void invalidateExistingActiveOtps(String phoneNumber) {
-        pinResetOtpRepository
-                .findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
-                .ifPresent(existing -> {
-                    existing.setStatus(PasswordResetStatus.INVALIDATED);
-                    existing.setInvalidatedAt(LocalDateTime.now());
-                    pinResetOtpRepository.save(existing);
-                });
     }
 }

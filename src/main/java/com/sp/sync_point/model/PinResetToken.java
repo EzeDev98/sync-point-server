@@ -1,5 +1,6 @@
 package com.sp.sync_point.model;
 
+import com.sp.sync_point.service.ResettableToken;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,7 +22,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "pin_reset_tokens")
-public class PinResetToken {
+public class PinResetToken implements ResettableToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

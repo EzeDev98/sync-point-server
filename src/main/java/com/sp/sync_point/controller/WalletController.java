@@ -8,7 +8,8 @@ import com.sp.sync_point.dto.UserRequest;
 import com.sp.sync_point.dto.VerifyPinRequest;
 import com.sp.sync_point.response.BaseResponse;
 import com.sp.sync_point.response.LoginResponse;
-import com.sp.sync_point.service.WalletService;
+import com.sp.sync_point.service.WalletAuthService;
+import com.sp.sync_point.service.WalletPinService;
 import com.sp.sync_point.service.impl.RateLimiterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,11 +28,13 @@ import static com.sp.sync_point.constants.GeneralConstants.*;
 @Tag(name = "Wallet API", description = "Resource for managing wallets")
 public class WalletController {
 
-    private final WalletService walletService;
+    private final WalletAuthService walletAuthService;
+    private final WalletPinService walletPinService;
     private final RateLimiterService rateLimiterService;
 
-    public WalletController(WalletService walletService, RateLimiterService rateLimiterService) {
-        this.walletService = walletService;
+    public WalletController(WalletAuthService walletAuthService, WalletPinService walletPinService, RateLimiterService rateLimiterService) {
+        this.walletAuthService = walletAuthService;
+        this.walletPinService = walletPinService;
         this.rateLimiterService = rateLimiterService;
     }
 
@@ -41,42 +44,42 @@ public class WalletController {
         String header = httpRequest.getHeader("X-Forwarded-For");
         String clientIp = (header != null && !header.isBlank()) ? header.split(",")[0].trim() : httpRequest.getRemoteAddr();
         rateLimiterService.checkRateLimit("ratelimit:login:ip" + clientIp, MAX_LOGIN_REQUEST, Duration.ofMinutes(LOGIN_RATE_LIMIT_DURATION));
-        LoginResponse response = walletService.walletLogin(request);
+        LoginResponse response = walletAuthService.walletLogin(request);
         return ResponseEntity.ok(response);
     }
 
     @Operation(method = "POST", summary = "set PIN", description = "This endpoint will allow users to set their transaction PIN. This is mainly for first timers")
     @PostMapping("/wallet/set-pin")
     public ResponseEntity<BaseResponse> setPin(@RequestBody SetPinRequest request) {
-        BaseResponse response = walletService.setPin(request);
+        BaseResponse response = walletPinService.setPin(request);
         return ResponseEntity.ok(response);
     }
 
     @Operation(method = "PUT", summary = "Change wallet pin", description = "This endpoint allows users to successfully change the their wallet pin")
     @PutMapping("/wallet/change-pin")
     public ResponseEntity<BaseResponse> changePin(@RequestBody PinRequest request) {
-        BaseResponse response = walletService.changePin(request);
+        BaseResponse response = walletPinService.changePin(request);
         return ResponseEntity.ok(response);
     }
 
     @Operation(method = "GET", summary = "Verify Pin", description = "This endpoint allows for the verification of wallet pin existence in the offline payment app database. It returns true if it exist and matches with the request sent by the client else it returns false")
     @GetMapping("/wallet/verify/pin")
     public ResponseEntity<Boolean> verifyPin(@RequestBody VerifyPinRequest request) {
-        Boolean isVerified = walletService.verifyPin(request.getWalletId(), request.getUnverifiedPin());
+        Boolean isVerified = walletPinService.verifyPin(request.getWalletId(), request.getUnverifiedPin());
         return ResponseEntity.ok(isVerified);
     }
 
     @Operation(method = "GET", summary = "Verify wallet pin is set ", description = "This endpoint allows a user to verify if a user has set wallet pin in the offline payment app database. It returns true if he has already set a pin and false if not")
     @GetMapping("/wallet/has-pin")
     public ResponseEntity<Boolean> isWalletPinSet(@RequestParam String walletId) {
-        Boolean isVerified = walletService.isWalletPinSet(walletId);
+        Boolean isVerified = walletPinService.isWalletPinSet(walletId);
         return ResponseEntity.ok(isVerified);
     }
 
     @Operation(method = "GET", summary = "Verify offline pay account exist", description = "This endpoint allows a user to verify offline pay account exist in the database. It returns true if the account exist and false if not")
     @GetMapping("/wallet/verify/account")
     public ResponseEntity<Boolean> doesAccountExist(@RequestParam String phoneNumber) {
-        Boolean response = walletService.doesAccountExist(phoneNumber);
+        Boolean response = walletAuthService.doesAccountExist(phoneNumber);
         return ResponseEntity.ok(response);
     }
 

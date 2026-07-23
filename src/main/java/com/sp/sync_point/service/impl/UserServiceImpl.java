@@ -9,7 +9,7 @@ import com.sp.sync_point.model.User;
 import com.sp.sync_point.repository.UserRepository;
 import com.sp.sync_point.response.UserRegistrationResponse;
 import com.sp.sync_point.service.UserService;
-import com.sp.sync_point.service.WalletService;
+import com.sp.sync_point.service.WalletProvisioningService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService {
 
     private final KeycloakService keycloakService;
 
-    private final WalletService walletService;
+    private final WalletProvisioningService walletService;
 
     private final UniqueValueGeneratorService uniqueValueGeneratorService;
 

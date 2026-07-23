@@ -1,6 +1,7 @@
 package com.sp.sync_point.model;
 
 import com.sp.sync_point.enums.PasswordResetStatus;
+import com.sp.sync_point.service.ResettableOtp;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,7 +23,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "password_reset_otps")
-public class PasswordResetOtp {
+public class PasswordResetOtp implements ResettableOtp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

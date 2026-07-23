@@ -21,7 +21,6 @@ public class UserSessionController {
     private final SessionManagementService sessionService;
 
     @Operation(method = "POST", summary = "Invalidate session", description = "This an admin endpoint for invalidating a user's session in case they mistakenly got locked out of the app. This will be on very rare occasion")
-    @PreAuthorize("@rolesEvaluator.invalidateSession(authentication)")
     @PostMapping("/session/invalidate")
     public ResponseEntity<InvalidatedSessionResponse> invalidateSession(@RequestParam String phoneNumber) {
         InvalidatedSessionResponse response = sessionService.invalidateUserSessionByAdmin(phoneNumber);
