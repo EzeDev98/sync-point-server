@@ -8,61 +8,95 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Central exception-to-HTTP-response translation.
+ * <p>
+ * Most exceptions in this application map 1:1 to an HTTP status with no
+ * special handling: no custom message, no logging, no extra
+ * {@code ProblemDetail} properties. Before this refactor, each of those
+ * ~37 exceptions had its own near-identical four-line
+ * {@code @ExceptionHandler} method — genuinely repeated code, and an
+ * Open/Closed Principle violation (adding a new simple exception meant
+ * modifying this class rather than extending it). Those are now one-line
+ * entries in {@link #SIMPLE_STATUS_MAPPINGS}, resolved by a single handler.
+ * <p>
+ * Exceptions with real custom behavior — a display title, server-side
+ * logging, a message that deliberately doesn't echo {@code ex.getMessage()},
+ * or extra {@code ProblemDetail} properties — keep their own explicit
+ * handler below, exactly as before. Nothing about their behavior changed;
+ * only the ~37 purely mechanical mappings were consolidated.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(IncorrectPinException.class)
-    public ProblemDetail handleIncorrectPinException(IncorrectPinException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-    }
+    /**
+     * Registry of exceptions that map straight to an HTTP status using
+     * {@code ex.getMessage()} as the detail, with no other behavior.
+     * Adding a new exception in this category is a one-line entry here —
+     * no new handler method needed.
+     * <p>
+     * Typed to {@code RuntimeException} because every exception in this
+     * mapping is unchecked. The one checked exception in this codebase,
+     * {@link DuplicateTransactionCheckException}, can't be typed into this
+     * map and keeps its own handler below for that reason alone — its
+     * actual handling (status + {@code ex.getMessage()}) is identical in
+     * shape to everything in this registry.
+     */
+    private static final Map<Class<? extends RuntimeException>, HttpStatus> SIMPLE_STATUS_MAPPINGS = Map.ofEntries(
+            Map.entry(IncorrectPinException.class, HttpStatus.UNAUTHORIZED),
+            Map.entry(InsufficientFundsException.class, HttpStatus.PAYMENT_REQUIRED),
+            Map.entry(InvalidTransactionRequestException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(UserNotFoundException.class, HttpStatus.NOT_FOUND),
+            Map.entry(AuthenticationException.class, HttpStatus.UNAUTHORIZED),
+            Map.entry(WalletNotFoundException.class, HttpStatus.NOT_FOUND),
+            Map.entry(TransactionsNotFoundException.class, HttpStatus.NOT_FOUND),
+            Map.entry(FailedToRetrieveTransactionBalanceException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(KeycloakAuthenticationException.class, HttpStatus.UNAUTHORIZED),
+            Map.entry(InvalidPasswordException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(InternalServerErrorException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+            Map.entry(EmptyFieldException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(InvalidTransactionLimitException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(CustomApiException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(TransactionPinNotSetException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(InvalidPinException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(EmptyRequestException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(WalletLockedException.class, HttpStatus.LOCKED),
+            Map.entry(PinVerificationException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(PinReuseException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(PinChangeLockedException.class, HttpStatus.LOCKED),
+            Map.entry(InvalidInputException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(ResourceNotFoundException.class, HttpStatus.NOT_FOUND),
+            Map.entry(ServiceUnavailableException.class, HttpStatus.SERVICE_UNAVAILABLE),
+            Map.entry(PaymentFailedException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(AlreadyExistException.class, HttpStatus.CONFLICT),
+            Map.entry(RegistrationException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(KeycloakRegistrationFailedException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+            Map.entry(MaxAttemptsExceededException.class, HttpStatus.TOO_MANY_REQUESTS),
+            Map.entry(UserAlreadyExistsException.class, HttpStatus.CONFLICT),
+            Map.entry(LockAcquisitionException.class, HttpStatus.CONFLICT),
+            Map.entry(RefreshTokenInvalidException.class, HttpStatus.UNAUTHORIZED),
+            Map.entry(ActiveSessionExistsException.class, HttpStatus.CONFLICT),
+            Map.entry(OtpResendCooldownException.class, HttpStatus.TOO_MANY_REQUESTS),
+            Map.entry(OtpInvalidException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(OtpExpiredException.class, HttpStatus.BAD_REQUEST),
+            Map.entry(ResetTokenInvalidException.class, HttpStatus.BAD_REQUEST)
+    );
 
-    @ExceptionHandler(InsufficientFundsException.class)
-    public ProblemDetail handleInsufficientFundsException(InsufficientFundsException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidTransactionRequestException.class)
-    public ProblemDetail handleInvalidTransactionRequestException(InvalidTransactionRequestException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ProblemDetail handleUserNotFoundException(UserNotFoundException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(AuthenticationException.class)
-    public ProblemDetail handleAuthenticationException(AuthenticationException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-    }
-
-    @ExceptionHandler(WalletNotFoundException.class)
-    public ProblemDetail handleWalletNotFoundException(WalletNotFoundException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(TransactionsNotFoundException.class)
-    public ProblemDetail handleTransactionsNotFoundException(TransactionsNotFoundException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(FailedToRetrieveTransactionBalanceException.class)
-    public ProblemDetail handleFailedToRetrieveTransactionBalanceException(FailedToRetrieveTransactionBalanceException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(KeycloakAuthenticationException.class)
-    public ProblemDetail handleKeycloakAuthenticationException(KeycloakAuthenticationException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidPasswordException.class)
-    public ProblemDetail handleInvalidPasswordException(InvalidPasswordException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    @ExceptionHandler(RuntimeException.class)
+    public ProblemDetail handleMappedRuntimeException(RuntimeException ex) {
+        HttpStatus status = SIMPLE_STATUS_MAPPINGS.get(ex.getClass());
+        if (status == null) {
+            // Not one of our recognized, simply-mapped exceptions (e.g. an
+            // NPE or other unexpected bug) — fall back to exactly the same
+            // handling as any other unanticipated error.
+            return buildUnexpectedErrorResponse(ex);
+        }
+        return ProblemDetail.forStatusAndDetail(status, ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateTransactionCheckException.class)
@@ -70,86 +104,11 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
-    @ExceptionHandler(InternalServerErrorException.class)
-    public ProblemDetail handleInternalServerErrorException(InternalServerErrorException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
-    }
-
-    @ExceptionHandler(EmptyFieldException.class)
-    public ProblemDetail handleEmptyFieldException(EmptyFieldException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidTransactionLimitException.class)
-    public ProblemDetail handleInvalidTransactionLimitException(InvalidTransactionLimitException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(CustomApiException.class)
-    public ProblemDetail handleCustomApiException(CustomApiException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(TransactionPinNotSetException.class)
-    public ProblemDetail handleTransactionPinNotSetException(TransactionPinNotSetException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidPinException.class)
-    public ProblemDetail handleInvalidPinException(InvalidPinException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(EmptyRequestException.class)
-    public ProblemDetail handleEmptyRequestException(EmptyRequestException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(WalletLockedException.class)
-    public ProblemDetail handleWalletLockedException(WalletLockedException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED, ex.getMessage());
-    }
-
-    @ExceptionHandler(PinVerificationException.class)
-    public ProblemDetail handlePinVerificationException(PinVerificationException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(PinReuseException.class)
-    public ProblemDetail handlePinReuseException(PinReuseException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(PinChangeLockedException.class)
-    public ProblemDetail handlePinChangeLockedException(PinChangeLockedException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.LOCKED, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidInputException.class)
-    public ProblemDetail handleInvalidInputException(InvalidInputException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ProblemDetail handleResourceNotFoundException(ResourceNotFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
     @ExceptionHandler(InsufficientBalanceException.class)
     public ProblemDetail handleInsufficientBalance(InsufficientBalanceException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
         problem.setTitle("Insufficient Balance");
         return problem;
-    }
-
-    @ExceptionHandler(ServiceUnavailableException.class)
-    public ProblemDetail handleServiceUnavailable(ServiceUnavailableException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
-    }
-
-    @ExceptionHandler(PaymentFailedException.class)
-    public ProblemDetail handlePaymentFailed(PaymentFailedException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -170,6 +129,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(Exception ex) {
+        return buildUnexpectedErrorResponse(ex);
+    }
+
+    private ProblemDetail buildUnexpectedErrorResponse(Exception ex) {
         String traceId = UUID.randomUUID().toString();
         log.error("[traceId={}] Unhandled exception", traceId, ex);
 
@@ -178,65 +141,5 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred. Please try again later.");
         problem.setProperty("traceId", traceId);
         return problem;
-    }
-
-    @ExceptionHandler(AlreadyExistException.class)
-    public ProblemDetail handleAlreadyExistException(AlreadyExistException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    @ExceptionHandler(RegistrationException.class)
-    public ProblemDetail handleRegistrationException(RegistrationException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(KeycloakRegistrationFailedException.class)
-    public ProblemDetail handleKeycloakRegistrationFailedException(KeycloakRegistrationFailedException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
-    }
-
-    @ExceptionHandler(MaxAttemptsExceededException.class)
-    public ProblemDetail handleMaxAttemptsExceededException(MaxAttemptsExceededException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
-    }
-
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ProblemDetail handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    @ExceptionHandler(LockAcquisitionException.class)
-    public ProblemDetail handleLockAcquisitionException(LockAcquisitionException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    @ExceptionHandler(RefreshTokenInvalidException.class)
-    public ProblemDetail handleRefreshTokenInvalidException(RefreshTokenInvalidException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-    }
-
-    @ExceptionHandler(ActiveSessionExistsException.class)
-    public ProblemDetail handleActiveSessionExistsException(ActiveSessionExistsException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    @ExceptionHandler(OtpResendCooldownException.class)
-    public ProblemDetail handleOtpResendCooldownException(OtpResendCooldownException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
-    }
-
-    @ExceptionHandler(OtpInvalidException.class)
-    public ProblemDetail handleOtpInvalidException(OtpInvalidException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(OtpExpiredException.class)
-    public ProblemDetail handleOtpExpiredException(OtpExpiredException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(ResetTokenInvalidException.class)
-    public ProblemDetail handleResetTokenInvalidException(ResetTokenInvalidException ex){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 }

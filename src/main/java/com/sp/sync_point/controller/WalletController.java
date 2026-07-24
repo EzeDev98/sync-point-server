@@ -62,8 +62,8 @@ public class WalletController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(method = "GET", summary = "Verify Pin", description = "This endpoint allows for the verification of wallet pin existence in the offline payment app database. It returns true if it exist and matches with the request sent by the client else it returns false")
-    @GetMapping("/wallet/verify/pin")
+    @Operation(method = "POST", summary = "Verify Pin", description = "This endpoint allows for the verification of wallet pin existence in the offline payment app database. It returns true if it exist and matches with the request sent by the client else it returns false")
+    @PostMapping("/wallet/verify/pin")
     public ResponseEntity<Boolean> verifyPin(@RequestBody VerifyPinRequest request) {
         Boolean isVerified = walletPinService.verifyPin(request.getWalletId(), request.getUnverifiedPin());
         return ResponseEntity.ok(isVerified);

@@ -115,10 +115,6 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         return entityUtilityService.existByPhoneNumber(phoneNumber);
     }
 
-    // ─────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────
-
     private boolean isLoginLocked(Wallet wallet) {
         LocalDateTime loginLockUntil = wallet.getLoginLockUntil();
         if (loginLockUntil == null) return false;

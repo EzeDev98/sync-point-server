@@ -21,12 +21,6 @@ public class EntityUtilityServiceImpl implements EntityUtilityService {
     }
 
     @Override
-    public Wallet findWalletByPhoneNumber(String phoneNumber) {
-        return walletRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new EntityNotFoundException("No wallet found for the provided phone number " + phoneNumber));
-    }
-
-    @Override
     public boolean existByPhoneNumber(String phoneNumber) {
         return walletRepository.existsByPhoneNumber(phoneNumber);
     }

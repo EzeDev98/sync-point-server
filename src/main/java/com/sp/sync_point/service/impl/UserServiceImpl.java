@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
-    private final ValidateService validateService;
+    private final RegistrationValidator registrationValidator;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserRegistrationResponse registerUser(RegistrationRequest request) {
 
-        validateService.validateRegistrationRequest(request);
+        registrationValidator.validateRegistrationRequest(request);
 
         Optional<User> existingUser = userRepository
                 .findByPhoneNumberOrEmailOrUsername(

@@ -36,7 +36,9 @@ com/sp/sync_point/repository/UserRepository.class
 com/sp/sync_point/enums/TransactionStatus.class
 com/sp/sync_point/constants/PasswordOtp.class
 com/sp/sync_point/enums/WalletStatus.class
+com/sp/sync_point/service/impl/PinValidator.class
 com/sp/sync_point/utils/TransactionUtils.class
+com/sp/sync_point/service/impl/TransactionValidator.class
 com/sp/sync_point/repository/SystemWalletRepository.class
 com/sp/sync_point/service/impl/TransactionSyncServiceImpl.class
 com/sp/sync_point/service/impl/ContiguityOtpDeliveryService.class
@@ -92,6 +94,7 @@ com/sp/sync_point/service/impl/WalletServiceImpl.class
 com/sp/sync_point/exception/ServiceUnavailableException.class
 com/sp/sync_point/repository/WalletFundingRecordRepository.class
 com/sp/sync_point/constants/GeneralConstants.class
+com/sp/sync_point/service/impl/RegistrationValidator.class
 com/sp/sync_point/controller/TransactionController.class
 com/sp/sync_point/service/PasswordResetService.class
 com/sp/sync_point/exception/CustomApiException.class
@@ -138,6 +141,7 @@ com/sp/sync_point/service/EntityUtilityService.class
 com/sp/sync_point/enums/PasswordResetStatus.class
 com/sp/sync_point/response/WalletFundingResponse.class
 com/sp/sync_point/service/impl/WalletLockoutService.class
+com/sp/sync_point/service/impl/ResetValidator.class
 com/sp/sync_point/exception/EmptyRequestException.class
 com/sp/sync_point/model/PasswordResetOtp.class
 com/sp/sync_point/enums/TransactionType.class

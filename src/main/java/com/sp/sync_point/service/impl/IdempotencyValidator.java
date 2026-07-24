@@ -15,10 +15,6 @@ public class IdempotencyValidator {
         this.transactionRepository = transactionRepository;
     }
 
-    public boolean isTransactionProcessed(String transactionRef) {
-        return transactionRepository.findByTransactionReference(transactionRef).isPresent();
-    }
-
     public List<Transaction> getProcessedTransactions(List<String> transactionRefs) {
         return transactionRepository.findByTransactionReferenceIn(transactionRefs);
     }

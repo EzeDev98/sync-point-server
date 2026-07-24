@@ -131,6 +131,8 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/OtpDeliveryService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/PasswordResetService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/PinResetService.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/ResettableOtp.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/ResettableToken.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/ResponseService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/SessionManagementService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/TransactionQueryService.java
@@ -151,10 +153,14 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/KeycloakService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/LoggingOtpDeliveryService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/LogoutServiceImpl.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/OtpResetEngine.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/OtpService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/PasswordResetServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/PinResetServiceImpl.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/PinValidator.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/RateLimiterService.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/RegistrationValidator.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/ResetValidator.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/ResponseServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/SessionManagementServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/SystemWalletInitializer.java
@@ -162,6 +168,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/TransactionQueryServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/TransactionServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/TransactionSyncServiceImpl.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/TransactionValidator.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/UniqueValueGeneratorService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/UserServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/sync_point/service/impl/ValidateService.java

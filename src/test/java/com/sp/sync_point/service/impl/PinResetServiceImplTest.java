@@ -53,7 +53,7 @@ class PinResetServiceImplTest {
     @Mock
     private WalletPinService walletService;
     @Mock
-    private ValidateService validateService;
+    private ResetValidator resetValidator;
     @Mock
     private RedissonClient redissonClient;
     @Mock
@@ -73,7 +73,7 @@ class PinResetServiceImplTest {
         service = new PinResetServiceImpl(
                 walletRepository, pinResetOtpRepository, pinResetTokenRepository,
                 otpService, otpDeliveryService, walletService, properties,
-                validateService, redissonClient, otpResetEngine);
+                resetValidator, redissonClient, otpResetEngine);
     }
 
     private Wallet wallet() {
@@ -105,7 +105,7 @@ class PinResetServiceImplTest {
     @Test
     void requestOtp_activeCooldown_throwsAfterWalletFound() {
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.of(wallet()));
-        when(redissonClient.getBucket(anyString())).thenReturn(cooldownBucket);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(cooldownBucket);
         when(cooldownBucket.isExists()).thenReturn(true);
         when(cooldownBucket.remainTimeToLive()).thenReturn(30_000L);
 
@@ -119,7 +119,7 @@ class PinResetServiceImplTest {
     @Test
     void requestOtp_happyPath_generatesAndSendsOtpBoundToWalletId() {
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.of(wallet()));
-        when(redissonClient.getBucket(anyString())).thenReturn(cooldownBucket);
+        when(redissonClient.<String>getBucket(anyString())).thenReturn(cooldownBucket);
         when(cooldownBucket.isExists()).thenReturn(false);
         when(pinResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(any(), any()))
                 .thenReturn(Optional.empty());

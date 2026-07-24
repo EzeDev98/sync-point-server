@@ -4,6 +4,7 @@ import com.sp.sync_point.dto.PinRequest;
 import com.sp.sync_point.dto.SetPinRequest;
 import com.sp.sync_point.exception.BadRequestException;
 import com.sp.sync_point.exception.InvalidPinException;
+import com.sp.sync_point.exception.PinChangeLockedException;
 import com.sp.sync_point.exception.TransactionPinNotSetException;
 import com.sp.sync_point.exception.WalletLockedException;
 import com.sp.sync_point.model.Wallet;
@@ -42,7 +43,7 @@ class WalletPinServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private ValidateService validateService;
+    private PinValidator pinValidator;
     @Mock
     private ResponseService responseService;
     @Mock
@@ -59,7 +60,7 @@ class WalletPinServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new WalletPinServiceImpl(
-                walletRepository, passwordEncoder, validateService, responseService,
+                walletRepository, passwordEncoder, pinValidator, responseService,
                 entityUtilityService, currentUserService, walletLockoutService);
 
         wallet = new Wallet();
@@ -75,6 +76,7 @@ class WalletPinServiceImplTest {
         return request;
     }
 
+    // ── setPin ─────────────────────────────────────────────────────
 
     @Test
     void setPin_callerDoesNotOwnPhoneNumber_isDenied() {
@@ -84,7 +86,7 @@ class WalletPinServiceImplTest {
 
         assertThatThrownBy(() -> service.setPin(request))
                 .isInstanceOf(AccessDeniedException.class);
-        verify(validateService, never()).setPinValidation(any());
+        verify(pinValidator, never()).setPinValidation(any());
     }
 
     @Test
@@ -177,10 +179,11 @@ class WalletPinServiceImplTest {
         wallet.setLocked(true);
         wallet.setLockedUntil(LocalDateTime.now().plusMinutes(5));
 
-        when(validateService.validateRequiredFields(any(), any())).thenReturn(true);
+        when(pinValidator.validateRequiredFields(any(), any(), any(), any())).thenReturn(true);
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(wallet));
         BaseResponse errorResponse = new BaseResponse();
-        when(responseService.createErrorResponse(any(), anyString(), anyInt())).thenReturn(errorResponse);
+        when(responseService.createErrorResponse(any(), eq("Wallet is locked. Please try again later."), anyInt()))
+                .thenReturn(errorResponse);
 
         BaseResponse response = service.changePin(request);
 
@@ -196,7 +199,7 @@ class WalletPinServiceImplTest {
         request.setOldPin("1111");
         wallet.setPin("hashed-1111");
 
-        when(validateService.validateRequiredFields(any(), any())).thenReturn(true);
+        when(pinValidator.validateRequiredFields(any(), any(), any(), any())).thenReturn(true);
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(wallet));
         when(passwordEncoder.matches("1111", "hashed-1111")).thenReturn(true); // old-pin check
         when(passwordEncoder.matches("7358", "hashed-1111")).thenReturn(true); // same-as-old check
@@ -217,7 +220,7 @@ class WalletPinServiceImplTest {
         request.setOldPin("1111");
         wallet.setPin("hashed-1111");
 
-        when(validateService.validateRequiredFields(any(), any())).thenReturn(true);
+        when(pinValidator.validateRequiredFields(any(), any(), any(), any())).thenReturn(true);
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(wallet));
         when(passwordEncoder.matches("1111", "hashed-1111")).thenReturn(false);
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.of(wallet));
@@ -240,7 +243,7 @@ class WalletPinServiceImplTest {
         wallet.setPin("hashed-1111");
         wallet.setPinChangeAttempts(2);
 
-        when(validateService.validateRequiredFields(any(), any())).thenReturn(true);
+        when(pinValidator.validateRequiredFields(any(), any(), any(), any())).thenReturn(true);
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(wallet));
         when(passwordEncoder.matches("1111", "hashed-1111")).thenReturn(true);
         when(passwordEncoder.matches("7358", "hashed-1111")).thenReturn(false);

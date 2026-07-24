@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,7 +58,7 @@ class PasswordResetServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
-    private ValidateService validateService;
+    private ResetValidator resetValidator;
     @Mock
     private RedissonClient redissonClient;
     @Mock
@@ -79,9 +80,13 @@ class PasswordResetServiceImplTest {
         service = new PasswordResetServiceImpl(
                 userRepository, passwordResetOtpRepository, passwordResetTokenRepository,
                 otpService, otpDeliveryService, keycloakService, sessionManagementService,
-                passwordEncoder, properties, validateService, redissonClient, otpResetEngine);
+                passwordEncoder, properties, resetValidator, redissonClient, otpResetEngine);
 
-        when(redissonClient.getBucket(anyString())).thenReturn(cooldownBucket);
+        // Only requestOtp tests actually call redissonClient.getBucket — this
+        // is declared centrally for convenience, so mark it lenient rather
+        // than have every verifyOtp/completeReset test flagged for an
+        // "unnecessary" stub it never touches.
+        lenient().when(redissonClient.<String>getBucket(anyString())).thenReturn(cooldownBucket);
     }
 
     // ── requestOtp ─────────────────────────────────────────────────

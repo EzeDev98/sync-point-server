@@ -51,7 +51,7 @@ public class PinResetServiceImpl implements PinResetService {
     private final OtpDeliveryService otpDeliveryService;
     private final WalletPinService walletService;
     private final PinResetProperties properties;
-    private final ValidateService validateService;
+    private final ResetValidator resetValidator;
     private final RedissonClient redissonClient;
     private final OtpResetEngine otpResetEngine;
 
@@ -62,7 +62,7 @@ public class PinResetServiceImpl implements PinResetService {
                                OtpDeliveryService otpDeliveryService,
                                WalletPinService walletService,
                                PinResetProperties properties,
-                               ValidateService validateService,
+                               ResetValidator resetValidator,
                                RedissonClient redissonClient,
                                OtpResetEngine otpResetEngine) {
         this.walletRepository = walletRepository;
@@ -72,7 +72,7 @@ public class PinResetServiceImpl implements PinResetService {
         this.otpDeliveryService = otpDeliveryService;
         this.walletService = walletService;
         this.properties = properties;
-        this.validateService = validateService;
+        this.resetValidator = resetValidator;
         this.redissonClient = redissonClient;
         this.otpResetEngine = otpResetEngine;
     }
@@ -80,7 +80,7 @@ public class PinResetServiceImpl implements PinResetService {
     @Override
     @Transactional
     public PinResetResponse requestOtp(PinResetRequestDto request) {
-        validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
+        resetValidator.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
         String phoneNumber = request.getPhoneNumber();
 
         Wallet wallet = walletRepository.findByPhoneNumber(phoneNumber)
@@ -110,8 +110,8 @@ public class PinResetServiceImpl implements PinResetService {
     @Override
     @Transactional
     public VerifyOtpResponse verifyOtp(VerifyPinOtpRequest request) {
-        validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
-        validateService.validateOtpFormat(request.getOtp(), properties.getOtp().getLength());
+        resetValidator.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
+        resetValidator.validateOtpFormat(request.getOtp(), properties.getOtp().getLength());
 
         String phoneNumber = request.getPhoneNumber();
         PinResetOtp otpEntity = pinResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)

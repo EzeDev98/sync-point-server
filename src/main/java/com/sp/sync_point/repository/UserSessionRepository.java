@@ -12,8 +12,4 @@ public interface UserSessionRepository extends JpaRepository<UserSession, Long> 
     Optional<UserSession> findByToken(String token);
     Optional<UserSession> findByPhoneNumberAndIsActiveTrue(String phoneNumber);
     Optional<UserSession> findByPhoneNumber(String phoneNumber);
-
-    @Modifying
-    @Query("DELETE FROM UserSession s WHERE s.token = :token")
-    void deleteByToken(@Param("token") String token);
 }

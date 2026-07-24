@@ -42,7 +42,7 @@ class TransactionSyncServiceImplTest {
     @Mock
     private IdempotencyValidator idempotencyValidator;
     @Mock
-    private ValidateService validateService;
+    private TransactionValidator transactionValidator;
     @Mock
     private UniqueValueGeneratorService valueGeneratorService;
     @Mock
@@ -61,7 +61,7 @@ class TransactionSyncServiceImplTest {
     void setUp() {
         service = new TransactionSyncServiceImpl(
                 transactionRepository, walletRepository, lockService, mapper,
-                idempotencyValidator, validateService, valueGeneratorService, currentUserService);
+                idempotencyValidator, transactionValidator, valueGeneratorService, currentUserService);
 
         User senderUser = new User();
         senderUser.setUsername("sender-user");
@@ -112,7 +112,7 @@ class TransactionSyncServiceImplTest {
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
-        verify(validateService).validateTransaction(request);
+        verify(transactionValidator).validateTransaction(request);
         verify(currentUserService).assertOwnsPhoneNumber("08010000001");
         verifyNoInteractions(walletRepository, lockService);
         assertThat(response.getStatusCode()).isEqualTo(200);
@@ -218,7 +218,7 @@ class TransactionSyncServiceImplTest {
         request.setReceiverPhone(request.getSenderPhone());
 
         doThrow(new BadRequestException("Sender and receiver cannot be the same"))
-                .when(validateService).validateTransaction(request);
+                .when(transactionValidator).validateTransaction(request);
         // validateTransaction runs first in the loop; short-circuits before our
         // own validateTransactionRequest and before any locking occurs.
 

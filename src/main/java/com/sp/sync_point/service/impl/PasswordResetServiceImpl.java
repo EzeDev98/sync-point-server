@@ -59,14 +59,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final SessionManagementService sessionManagementService;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetProperties properties;
-    private final ValidateService validateService;
+    private final ResetValidator resetValidator;
     private final RedissonClient redissonClient;
     private final OtpResetEngine otpResetEngine;
 
     @Override
     @Transactional
     public PasswordResetResponse requestOtp(PasswordResetRequestDto request) {
-        validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
+        resetValidator.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
         String phoneNumber = request.getPhoneNumber();
 
         RBucket<String> cooldownBucket = otpResetEngine.getCooldownBucket(redissonClient, PASSWORD_RESET_COOLDOWN_KEY_PREFIX, phoneNumber);
@@ -104,8 +104,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public VerifyOtpResponse verifyOtp(VerifyOtpRequest request) {
-        validateService.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
-        validateService.validateOtpFormat(request.getOtp(), properties.getOtp().getLength());
+        resetValidator.validatePhoneNumberFoResetOperations(request.getPhoneNumber());
+        resetValidator.validateOtpFormat(request.getOtp(), properties.getOtp().getLength());
 
         String phoneNumber = request.getPhoneNumber();
         PasswordResetOtp otpEntity = passwordResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(phoneNumber, PasswordResetStatus.ACTIVE)
@@ -127,7 +127,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public PasswordResetResponse completeReset(CompletePasswordResetRequest request) {
-        validateService.validateNewPassword(request.getNewPassword(), request.getConfirmPassword());
+        resetValidator.validateNewPassword(request.getNewPassword(), request.getConfirmPassword());
 
         if (request.getResetToken() == null || request.getResetToken().isBlank()) {
             throw new ResetTokenInvalidException("Your password reset session has expired. Please start again.");

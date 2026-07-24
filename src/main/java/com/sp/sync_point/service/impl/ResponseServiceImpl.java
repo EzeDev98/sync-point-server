@@ -23,12 +23,4 @@ public class ResponseServiceImpl implements ResponseService {
         response.setStatusCode(statusCode);
         return response;
     }
-
-    @Override
-    public BaseResponse createSuccessResponse(BaseResponse response, String message, Map<String, Object> data) {
-        response.setDescription(message);
-        response.setStatusCode(HttpServletResponse.SC_OK);
-        response.setData(data);
-        return response;
-    }
 }

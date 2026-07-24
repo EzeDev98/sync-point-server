@@ -39,17 +39,12 @@ public class TransactionLockService {
         try {
             boolean acquired = lock.tryLock(WAIT_SECONDS, LEASE_SECONDS, TimeUnit.SECONDS);
             if (!acquired) {
-                throw new LockAcquisitionException(
-                        "Could not acquire lock for wallet: " + phoneNumber +
-                                " within " + WAIT_SECONDS + "s — another operation is in progress."
-                );
+                throw new LockAcquisitionException("Could not acquire lock for wallet: " + phoneNumber + " within " + WAIT_SECONDS + "s — another operation is in progress.");
             }
             log.debug("[Lock] Acquired lock for: {}", phoneNumber);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new LockAcquisitionException(
-                    "Interrupted while waiting for lock: " + phoneNumber, e
-            );
+            throw new LockAcquisitionException("Interrupted while waiting for lock: " + phoneNumber, e);
         }
     }
 

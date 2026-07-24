@@ -102,8 +102,9 @@ public class ContiguityOtpDeliveryService implements OtpDeliveryService {
 
     /**
      * Contiguity requires E.164 (e.g. +2348012345678). This app stores
-     * Nigerian numbers without a country code (see ValidateService's
-     * ^\+?[0-9]{11}$ rule), so we default to +234 when no '+' is present.
+     * Nigerian numbers without a country code (see the ^\+?[0-9]{11}$
+     * phone-format rule enforced at registration/reset time), so we
+     * default to +234 when no '+' is present.
      */
     private String toE164(String phoneNumber) {
         if (phoneNumber.startsWith("+")) {

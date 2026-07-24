@@ -57,15 +57,6 @@ public class UniqueValueGeneratorService {
         return sb.toString();
     }
 
-    public String generateSyncTime() {
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter nameFormatter = DateTimeFormatter.ofPattern("EEEE");
-        String dayName = now.format(nameFormatter);
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-        String formattedTime = now.format(dateTimeFormatter);
-        return dayName + ", " + formattedTime;
-    }
-
     public String generateUniqueReferenceId() {
         String ref;
         do {

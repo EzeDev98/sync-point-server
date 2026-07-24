@@ -63,7 +63,7 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
     private final TransactionLockService lockService;
     private final DtoMapper mapper;
     private final IdempotencyValidator idempotencyValidator;
-    private final ValidateService validateService;
+    private final TransactionValidator transactionValidator;
     private final UniqueValueGeneratorService valueGeneratorService;
     private final CurrentUserService currentUserService;
 
@@ -91,7 +91,7 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
         log.info("[Sync] Processing {} transaction request(s)", requests.size());
 
         for (SyncTransactionRequest request : requests) {
-            validateService.validateTransaction(request);
+            transactionValidator.validateTransaction(request);
             validateTransactionRequest(request);
         }
 
@@ -107,11 +107,12 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
                 .collect(Collectors.toSet());
 
         List<SyncTransactionRequest> newRequests = requests.stream()
-                .filter(ref -> !processedRefs.contains(ref.getTransactionRef()))
+                .filter(r -> !processedRefs.contains(r.getTransactionRef()))
                 .collect(Collectors.toList());
 
         if (newRequests.isEmpty()) {
-            log.info("[Sync] All {} transaction(s) already processed — idempotent response",requests.size());
+            log.info("[Sync] All {} transaction(s) already processed — idempotent response",
+                    requests.size());
             return buildIdempotentResponse(alreadyProcessed);
         }
 

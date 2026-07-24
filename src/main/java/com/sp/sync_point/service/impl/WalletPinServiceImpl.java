@@ -62,7 +62,7 @@ public class WalletPinServiceImpl implements WalletPinService {
 
     private final WalletRepository walletRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ValidateService validateService;
+    private final PinValidator pinValidator;
     private final ResponseService responseService;
     private final EntityUtilityService entityUtilityService;
     private final CurrentUserService currentUserService;
@@ -74,7 +74,7 @@ public class WalletPinServiceImpl implements WalletPinService {
         currentUserService.assertOwnsPhoneNumber(request.getPhoneNumber());
 
         try {
-            validateService.setPinValidation(request);
+            pinValidator.setPinValidation(request);
 
             Wallet wallet = walletRepository.findByPhoneNumber(request.getPhoneNumber())
                     .orElseThrow(() -> new NotFoundException("No wallet found for the phone number provided: " + request.getPhoneNumber()));
@@ -86,10 +86,6 @@ public class WalletPinServiceImpl implements WalletPinService {
             if (isLockedForPinChange(wallet)) {
                 long remainingMinutes = getRemainingPinChangeLockTime(wallet);
                 throw new PinChangeLockedException("PIN set is temporarily locked. Try again after " + remainingMinutes + " minutes.", remainingMinutes);
-            }
-
-            if (isNotValidPinFormat(request.getPin())) {
-                throw new InvalidPinException("PIN must be exactly 4 digits");
             }
 
             if (isWeakPin(request.getPin())) {
@@ -168,7 +164,7 @@ public class WalletPinServiceImpl implements WalletPinService {
         currentUserService.assertOwnsPhoneNumber(phoneNumber);
 
         try {
-            if (!validateService.validateRequiredFields(response, phoneNumber, pinRequest.getPin(), pinRequest.getOldPin())) {
+            if (!pinValidator.validateRequiredFields(response, phoneNumber, pinRequest.getPin(), pinRequest.getOldPin())) {
                 return response;
             }
 
