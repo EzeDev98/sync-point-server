@@ -33,6 +33,20 @@ public class Wallet {
     @Column(name = "pin")
     private String pin;
 
+    /**
+     * The device's ECDSA P-256 public key (SPKI/X.509 DER, base64), used to
+     * verify the signatures on offline P2P transfers this wallet sends.
+     * <p>
+     * Registered via {@code POST /wallet/signing-key} — at first PIN-set for
+     * new wallets, and once on next login for wallets that predate signing.
+     * Nullable so existing rows migrate cleanly; a null key simply means the
+     * wallet hasn't enrolled yet and its transfers cannot be verified (and so
+     * cannot be settled) until it does. Length is generous headroom over the
+     * ~124-char base64 SPKI of a P-256 key.
+     */
+    @Column(name = "signing_public_key", length = 512)
+    private String signingPublicKey;
+
     @Column(name = "wallet_phone_number")
     private String phoneNumber;
 

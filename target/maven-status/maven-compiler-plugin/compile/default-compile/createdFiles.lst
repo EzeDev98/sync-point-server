@@ -53,6 +53,8 @@ com/sp/syncPoint/common/exception/WalletLockedException.class
 com/sp/syncPoint/feature/passwordreset/model/PasswordResetToken.class
 com/sp/syncPoint/common/response/ResponseServiceImpl.class
 com/sp/syncPoint/feature/passwordreset/web/PasswordResetController.class
+com/sp/syncPoint/common/security/TransferSignatureVerifier.class
+com/sp/syncPoint/feature/wallet/dto/SigningKeyRequest.class
 com/sp/syncPoint/feature/wallet/dto/WalletFundingResponse.class
 com/sp/syncPoint/common/exception/InvalidPasswordException.class
 com/sp/syncPoint/feature/session/dto/LogoutResponse.class
@@ -131,6 +133,7 @@ com/sp/syncPoint/feature/wallet/repository/WalletRepository.class
 com/sp/syncPoint/feature/wallet/model/WalletFundingRecord.class
 com/sp/syncPoint/feature/transaction/service/impl/TransactionLockService.class
 com/sp/syncPoint/feature/user/web/UserController.class
+com/sp/syncPoint/feature/wallet/service/impl/WalletSigningKeyServiceImpl.class
 com/sp/syncPoint/feature/transaction/enums/Outcome.class
 com/sp/syncPoint/feature/transaction/enums/TransactionType.class
 com/sp/syncPoint/common/exception/EmptyRequestException.class
@@ -161,6 +164,7 @@ com/sp/syncPoint/feature/pinreset/repository/PinResetTokenRepository.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletFundingServiceImpl.class
 com/sp/syncPoint/common/exception/PaymentFailedException.class
 com/sp/syncPoint/feature/auth/dto/UserRequest.class
+com/sp/syncPoint/feature/wallet/service/WalletSigningKeyService.class
 com/sp/syncPoint/feature/pinreset/model/PinResetOtp.class
 com/sp/syncPoint/common/exception/KeycloakAuthenticationException.class
 com/sp/syncPoint/common/reset/ResettableToken.class

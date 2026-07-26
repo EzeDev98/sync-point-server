@@ -63,6 +63,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/KeycloakConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/KeycloakJwtRolesConverter.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/RolesEvaluator.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/TransferSignatureVerifier.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/WebSecurityConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/support/EntityUtilityService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/support/EntityUtilityServiceImpl.java
@@ -148,6 +149,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/user/web/UserController.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/dto/PinRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/dto/SetPinRequest.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/dto/SigningKeyRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/dto/VerifyPinRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/dto/WalletFundingResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/dto/WalletTransferRequest.java
@@ -161,6 +163,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/WalletFundingService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/WalletPinService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/WalletProvisioningService.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/WalletSigningKeyService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/PinHasher.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/PinValidator.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/SystemWalletInitializer.java
@@ -170,4 +173,5 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/WalletLockoutService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/WalletPinServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/WalletProvisioningServiceImpl.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/service/impl/WalletSigningKeyServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/wallet/web/WalletController.java

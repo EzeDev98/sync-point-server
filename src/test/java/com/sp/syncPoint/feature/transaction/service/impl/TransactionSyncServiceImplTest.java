@@ -2,6 +2,7 @@ package com.sp.syncPoint.feature.transaction.service.impl;
 
 import com.sp.syncPoint.common.exception.BadRequestException;
 import com.sp.syncPoint.common.response.BaseResponse;
+import com.sp.syncPoint.common.security.TransferSignatureVerifier;
 import com.sp.syncPoint.common.util.UniqueValueGeneratorService;
 import com.sp.syncPoint.feature.transaction.dto.ProcessingResult;
 import com.sp.syncPoint.feature.transaction.dto.SyncTransactionRequest;
@@ -12,7 +13,6 @@ import com.sp.syncPoint.feature.transaction.mapper.DtoMapper;
 import com.sp.syncPoint.feature.transaction.model.Transaction;
 import com.sp.syncPoint.feature.transaction.repository.TransactionRepository;
 import com.sp.syncPoint.feature.user.model.User;
-import com.sp.syncPoint.feature.user.service.impl.CurrentUserService;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
 import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -30,10 +29,27 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for the batch sync engine under the signature-authorized,
+ * Model B settlement.
+ * <p>
+ * Two things changed shape from the pre-Model-B suite:
+ * <ul>
+ *   <li><b>Authorization is a signature, not caller ownership.</b> There is no
+ *       {@code CurrentUserService} anymore; the collaborator is
+ *       {@link TransferSignatureVerifier}, mocked here so each test declares
+ *       whether the transfer's signature verifies.</li>
+ *   <li><b>Settlement credits the receiver only.</b> The sender's mirror is
+ *       never touched (the money left it at funding time), so success saves
+ *       only the receiver wallet, and there is no server-side insufficient-
+ *       balance path — an amount larger than the sender's mirror still settles.</li>
+ * </ul>
+ */
 @ExtendWith(MockitoExtension.class)
 class TransactionSyncServiceImplTest {
 
@@ -50,7 +66,7 @@ class TransactionSyncServiceImplTest {
     @Mock
     private UniqueValueGeneratorService valueGeneratorService;
     @Mock
-    private CurrentUserService currentUserService;
+    private TransferSignatureVerifier signatureVerifier;
 
     // DtoMapper has no dependencies, so we use the real implementation
     // rather than mocking it — this exercises the actual mapping logic too.
@@ -68,7 +84,7 @@ class TransactionSyncServiceImplTest {
     void setUp() {
         service = new TransactionSyncServiceImpl(
                 transactionRepository, walletRepository, lockService, mapper,
-                idempotencyValidator, transactionValidator, valueGeneratorService, currentUserService,
+                idempotencyValidator, transactionValidator, valueGeneratorService, signatureVerifier,
                 responseAssembler);
 
         User senderUser = new User();
@@ -81,6 +97,7 @@ class TransactionSyncServiceImplTest {
         senderWallet.setWalletId("WM-SENDER");
         senderWallet.setPhoneNumber("08010000001");
         senderWallet.setMirrorBalance(new BigDecimal("5000.00"));
+        senderWallet.setSigningPublicKey("SENDER-PUBLIC-KEY"); // verifier is mocked; value is irrelevant
         senderWallet.setUser(senderUser);
 
         receiverWallet = new Wallet();
@@ -103,7 +120,14 @@ class TransactionSyncServiceImplTest {
         request.setReceiverPhone("08010000002");
         request.setAmount(new BigDecimal("500.00"));
         request.setCreatedAt(Instant.now());
+        request.setSignature("BASE64-SIGNATURE");
         return request;
+    }
+
+    /** Stubs a valid signature for the (mocked) verifier. */
+    private void signatureIsValid() {
+        when(signatureVerifier.verify(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(true);
     }
 
     @Test
@@ -121,14 +145,13 @@ class TransactionSyncServiceImplTest {
         BaseResponse response = service.syncTransactions(List.of(request));
 
         verify(transactionValidator).validateTransaction(request);
-        verify(currentUserService).assertOwnsPhoneNumber("08010000001");
-        verifyNoInteractions(walletRepository, lockService);
+        verifyNoInteractions(walletRepository, lockService, signatureVerifier);
         assertThat(response.getStatusCode()).isEqualTo(200);
         assertThat(response.getDescription()).contains("Idempotent");
     }
 
     @Test
-    void syncTransactions_newTransfer_completesAndUpdatesBothWalletBalances() {
+    void syncTransactions_newTransfer_settles_creditsReceiverOnly_modelB() {
         SyncTransactionRequest request = validRequest();
 
         when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
@@ -137,13 +160,18 @@ class TransactionSyncServiceImplTest {
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(senderWallet));
         when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.of(receiverWallet));
         when(valueGeneratorService.generateSyncId()).thenReturn("SYNC-1");
+        signatureIsValid();
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
-        assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("4500.00");
+        // Model B: sender mirror untouched, only the receiver is credited.
+        assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
         assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1500.00");
+
         verify(transactionRepository).saveAll(anyList());
-        verify(walletRepository).saveAll(List.of(senderWallet, receiverWallet));
+        verify(walletRepository).save(receiverWallet);
+        verify(walletRepository, never()).save(senderWallet);
+        verify(walletRepository, never()).saveAll(anyList());
         verify(lockService).releaseAllLocks(List.of("08010000001", "08010000002"));
 
         @SuppressWarnings("unchecked")
@@ -154,7 +182,10 @@ class TransactionSyncServiceImplTest {
     }
 
     @Test
-    void syncTransactions_insufficientBalance_recordsFailedPairWithoutMovingFunds() {
+    void syncTransactions_amountExceedsSenderMirror_stillSettles_modelB() {
+        // Under Model B the server does not re-check sender funds — that is the
+        // client's responsibility. An amount larger than the sender's mirror
+        // still settles: the mirror is not the source of offline spend.
         SyncTransactionRequest request = validRequest();
         request.setAmount(new BigDecimal("999999.00"));
 
@@ -163,24 +194,97 @@ class TransactionSyncServiceImplTest {
         when(transactionRepository.existsByTransactionReference("TXN-1")).thenReturn(false);
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(senderWallet));
         when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.of(receiverWallet));
-
-        BigDecimal senderBalanceBefore = senderWallet.getMirrorBalance();
+        when(valueGeneratorService.generateSyncId()).thenReturn("SYNC-1");
+        signatureIsValid();
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
-        assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo(senderBalanceBefore);
+        assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
+        assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000999.00");
+        verify(walletRepository).save(receiverWallet);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) response.getData();
+        assertThat(data.get("completedCount")).isEqualTo(1);
+        assertThat(data.get("failedCount")).isEqualTo(0);
+    }
+
+    @Test
+    void syncTransactions_invalidSignature_rejected_persistsNothing() {
+        SyncTransactionRequest request = validRequest();
+
+        when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
+        when(lockService.acquireAllLocks(anyList())).thenReturn(List.of("08010000001", "08010000002"));
+        when(transactionRepository.existsByTransactionReference("TXN-1")).thenReturn(false);
+        when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(senderWallet));
+        when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.of(receiverWallet));
+        when(signatureVerifier.verify(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(false);
+
+        BaseResponse response = service.syncTransactions(List.of(request));
+
+        // Nothing persisted, no balance moved, locks still released.
+        assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
+        assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000.00");
+        verify(transactionRepository, never()).saveAll(anyList());
+        verify(walletRepository, never()).save(any());
         verify(walletRepository, never()).saveAll(anyList());
+        verify(lockService).releaseAllLocks(List.of("08010000001", "08010000002"));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) response.getData();
         assertThat(data.get("completedCount")).isEqualTo(0);
-        // Pre-existing asymmetry carried over unchanged from the original
-        // TransactionServiceImpl: completedCount is halved (a completed
-        // transfer produces a DEBIT+CREDIT pair) but failedCount is NOT
-        // halved, so one failed transfer reports as 2, not 1. Flagged to
-        // the team as a possible follow-up fix; not changed here since it
-        // would alter response data.
-        assertThat(data.get("failedCount")).isEqualTo(2);
+        assertThat(data.get("failedCount")).isEqualTo(1);
+        assertThat(data.get("skippedCount")).isEqualTo(0);
+    }
+
+    @Test
+    void syncTransactions_senderWalletDoesNotMatchSignedSender_rejected() {
+        // The wallet reached via senderPhone is not the signed sender wallet —
+        // an attempt to borrow a signature from a different sender.
+        SyncTransactionRequest request = validRequest();
+        senderWallet.setWalletId("WM-SOMEONE-ELSE");
+
+        when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
+        when(lockService.acquireAllLocks(anyList())).thenReturn(List.of("08010000001", "08010000002"));
+        when(transactionRepository.existsByTransactionReference("TXN-1")).thenReturn(false);
+        when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(senderWallet));
+        when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.of(receiverWallet));
+
+        BaseResponse response = service.syncTransactions(List.of(request));
+
+        verify(signatureVerifier, never()).verify(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(transactionRepository, never()).saveAll(anyList());
+        verify(walletRepository, never()).save(any());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) response.getData();
+        assertThat(data.get("completedCount")).isEqualTo(0);
+        assertThat(data.get("failedCount")).isEqualTo(1);
+    }
+
+    @Test
+    void syncTransactions_receiverWalletDoesNotMatchSignedReceiver_rejected() {
+        // Redirection attempt: a valid "pay WM-RECEIVER" signature pointed at a
+        // wallet reached via a different receiverPhone.
+        SyncTransactionRequest request = validRequest();
+        receiverWallet.setWalletId("WM-SOMEONE-ELSE");
+
+        when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
+        when(lockService.acquireAllLocks(anyList())).thenReturn(List.of("08010000001", "08010000002"));
+        when(transactionRepository.existsByTransactionReference("TXN-1")).thenReturn(false);
+        when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(senderWallet));
+        when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.of(receiverWallet));
+
+        BaseResponse response = service.syncTransactions(List.of(request));
+
+        verify(signatureVerifier, never()).verify(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(walletRepository, never()).save(any());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> data = (Map<String, Object>) response.getData();
+        assertThat(data.get("completedCount")).isEqualTo(0);
+        assertThat(data.get("failedCount")).isEqualTo(1);
     }
 
     @Test
@@ -190,12 +294,13 @@ class TransactionSyncServiceImplTest {
         when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
         when(lockService.acquireAllLocks(anyList())).thenReturn(List.of("08010000001", "08010000002"));
         // Simulates a concurrent request having already applied this transactionRef
-        // between the outer pre-filter and lock acquisition (fix issue #12 — TOCTOU).
+        // between the outer pre-filter and lock acquisition (TOCTOU).
         when(transactionRepository.existsByTransactionReference("TXN-1")).thenReturn(true);
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
         verify(walletRepository, never()).findByPhoneNumberWithLock(anyString());
+        verifyNoInteractions(signatureVerifier);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) response.getData();
@@ -203,7 +308,7 @@ class TransactionSyncServiceImplTest {
     }
 
     @Test
-    void syncTransactions_locksAlwaysReleasedEvenOnFailure() {
+    void syncTransactions_locksAlwaysReleasedEvenOnError() {
         SyncTransactionRequest request = validRequest();
 
         when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
@@ -213,39 +318,26 @@ class TransactionSyncServiceImplTest {
         when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.empty());
 
         // processSingleTransfer throws internally (receiver wallet not found); the
-        // outer syncTransactions loop catches it per-request and records a failure,
-        // but the lock must still be released via the finally block either way.
+        // outer loop catches it per-request and records a failure, but the lock
+        // must still be released via the finally block either way.
         service.syncTransactions(List.of(request));
 
         verify(lockService).releaseAllLocks(List.of("08010000001", "08010000002"));
     }
 
     @Test
-    void processSingleTransfer_sendersMissingOwnership_isRejectedBeforeAnyLocking() {
+    void syncTransactions_fieldValidationFailure_shortCircuitsBeforeLocking() {
         SyncTransactionRequest request = validRequest();
-        request.setReceiverPhone(request.getSenderPhone());
 
         doThrow(new BadRequestException("Sender and receiver cannot be the same"))
                 .when(transactionValidator).validateTransaction(request);
-        // validateTransaction runs first in the loop; short-circuits before our
-        // own validateTransactionRequest and before any locking occurs.
+        // validateTransaction runs first in the loop and short-circuits the whole
+        // batch before any idempotency lookup or locking.
 
         assertThatThrownBy(() -> service.syncTransactions(List.of(request)))
                 .isInstanceOf(BadRequestException.class);
 
-        verifyNoInteractions(lockService);
-    }
-
-    @Test
-    void processSingleTransfer_callerDoesNotOwnSenderPhone_isDenied() {
-        SyncTransactionRequest request = validRequest();
-        doThrow(new AccessDeniedException("You do not have permission to access this resource"))
-                .when(currentUserService).assertOwnsPhoneNumber("08010000001");
-
-        assertThatThrownBy(() -> service.syncTransactions(List.of(request)))
-                .isInstanceOf(AccessDeniedException.class);
-
-        verifyNoInteractions(lockService);
+        verifyNoInteractions(lockService, signatureVerifier);
     }
 
     @Test
@@ -262,6 +354,7 @@ class TransactionSyncServiceImplTest {
         when(lockService.acquireAllLocks(List.of("08010000001", "08020000002")))
                 .thenReturn(List.of("08010000001", "08020000002"));
         when(valueGeneratorService.generateSyncId()).thenReturn("SYNC-1");
+        signatureIsValid();
 
         ProcessingResult result = service.processSingleTransfer(request);
 

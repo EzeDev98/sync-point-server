@@ -3,14 +3,18 @@ package com.sp.syncPoint.feature.wallet.web;
 
 import com.sp.syncPoint.feature.wallet.dto.PinRequest;
 import com.sp.syncPoint.feature.wallet.dto.SetPinRequest;
+
 import com.sp.syncPoint.feature.auth.dto.UserRequest;
 
+import com.sp.syncPoint.feature.wallet.dto.SigningKeyRequest;
 import com.sp.syncPoint.feature.wallet.dto.VerifyPinRequest;
 import com.sp.syncPoint.common.response.BaseResponse;
 import com.sp.syncPoint.feature.auth.dto.LoginResponse;
 import com.sp.syncPoint.feature.wallet.service.WalletAuthService;
 import com.sp.syncPoint.feature.wallet.service.WalletPinService;
+
 import com.sp.syncPoint.common.util.RateLimiterService;
+import com.sp.syncPoint.feature.wallet.service.WalletSigningKeyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,11 +34,13 @@ public class WalletController {
 
     private final WalletAuthService walletAuthService;
     private final WalletPinService walletPinService;
+    private final WalletSigningKeyService walletSigningKeyService;
     private final RateLimiterService rateLimiterService;
 
-    public WalletController(WalletAuthService walletAuthService, WalletPinService walletPinService, RateLimiterService rateLimiterService) {
+    public WalletController(WalletAuthService walletAuthService, WalletPinService walletPinService, WalletSigningKeyService walletSigningKeyService, RateLimiterService rateLimiterService) {
         this.walletAuthService = walletAuthService;
         this.walletPinService = walletPinService;
+        this.walletSigningKeyService = walletSigningKeyService;
         this.rateLimiterService = rateLimiterService;
     }
 
@@ -67,6 +73,13 @@ public class WalletController {
     public ResponseEntity<Boolean> verifyPin(@RequestBody VerifyPinRequest request) {
         Boolean isVerified = walletPinService.verifyPin(request.getWalletId(), request.getUnverifiedPin());
         return ResponseEntity.ok(isVerified);
+    }
+
+    @Operation(method = "POST", summary = "Register offline signing key", description = "Registers this device's ECDSA P-256 public key (base64 SPKI) on the authenticated caller's wallet. The key is used to verify the signatures on the offline transfers this wallet sends, so a receiver can settle a received transfer without the sender being online.")
+    @PostMapping("/wallet/signing-key")
+    public ResponseEntity<BaseResponse> registerSigningKey(@RequestBody SigningKeyRequest request) {
+        BaseResponse response = walletSigningKeyService.registerSigningKey(request.getSigningPublicKey());
+        return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @Operation(method = "GET", summary = "Verify wallet pin is set ", description = "This endpoint allows a user to verify if a user has set wallet pin in the offline payment app database. It returns true if he has already set a pin and false if not")

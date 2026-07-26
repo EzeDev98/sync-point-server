@@ -72,4 +72,19 @@ public class SyncTransactionRequest {
     @NotNull(message = "createdAt is required")
     @JsonProperty("createdAt")
     private Instant createdAt;
+
+    /**
+     * The sender's signature authorizing this exact transfer — base64,
+     * ECDSA P-256/SHA-256 over the canonical transfer payload (see
+     * {@code TransferSignatureVerifier}). It is what lets a receiver settle a
+     * transfer they received without the sender being online: the signature,
+     * not "who is calling", proves the sender authorized the money movement.
+     * <p>
+     * Left un-annotated (no {@code @NotBlank}) on purpose — a missing or bad
+     * signature must fail as a single rejected transfer inside the batch, not
+     * as a 400 that takes the whole sync down with it. The service verifies it
+     * per entry.
+     */
+    @JsonProperty("signature")
+    private String signature;
 }
