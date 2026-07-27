@@ -102,6 +102,8 @@ public class GeneralConstants {
 
     public static final int MAX_RESET_PIN_REQUEST = 5;
 
+    public static final String REQUIRED_CONFIRMATION = "WIPE-EVERYTHING";
+
 
     private GeneralConstants() {
         throw new UnsupportedOperationException("General constant class and cannot be instantiated");

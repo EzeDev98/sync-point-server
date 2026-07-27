@@ -64,6 +64,12 @@ public class WebSecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/password-reset/complete").permitAll()
 
+                        // Danger-zone data wipe (test environments). Opened here so it can be
+                        // called without a Keycloak login; it is guarded instead by a required
+                        // X-Reset-Secret plus a confirmation phrase, and is inert unless
+                        // app.reset.secret is configured. See AdminResetController.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/reset/wipe").permitAll()
+
                         .requestMatchers("/public/**").permitAll()
 
                         .requestMatchers(
