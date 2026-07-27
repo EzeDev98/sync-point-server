@@ -45,33 +45,44 @@ import static java.math.BigDecimal.ZERO;
  * <p>
  * Extracted from the original {@code TransactionServiceImpl} god class as
  * part of the earlier SOLID refactor. It owns the reconciliation flow, the
- * per-transfer authorization, and the lock/idempotency/settlement
- * orchestration — entity construction lives in {@link DtoMapper#buildEntry},
- * response shaping in {@link TransactionResponseAssembler}, and field
- * validation in {@link TransactionValidator}. Wallet funding/transfer live in
+ * per-transfer authorization, and the lock/idempotency orchestration — entity
+ * construction lives in {@link DtoMapper#buildEntry}, response shaping in
+ * {@link TransactionResponseAssembler}, and field validation in
+ * {@link TransactionValidator}. Wallet funding/transfer live in
  * {@link WalletFundingServiceImpl}.
  *
- * <h2>Settlement model (Model B)</h2>
- * Offline float is the client's money once loaded: funding an offline wallet
- * already moved the money out of the sender's mirror balance. So at sync time
- * a transfer's <b>DEBIT does NOT touch the sender's mirror</b> — charging it
- * again would double-spend the sender. Only the <b>CREDIT applies</b>, raising
- * the receiver's mirror. Funding and transfer-to-online still adjust the
- * mirror directly; that is unchanged and lives elsewhere.
+ * <h2>Settlement model</h2>
+ * A P2P sync is <b>audit-only</b>. Money loaded onto a device is the client's
+ * from funding time — funding already moved it out of the sender's mirror
+ * balance — and a peer transfer moves value between two <i>device</i> ledgers,
+ * not between mirrors. So at sync we record the DEBIT and CREDIT for history
+ * and idempotency but <b>move no mirror balance</b>: not the sender's, not the
+ * receiver's. Received money lives in the receiver's device ledger until the
+ * receiver explicitly moves it online. Mirror balances change only on funding
+ * (mirror &rarr; device) and transfer-to-online (device &rarr; mirror), both of
+ * which live in {@link WalletFundingServiceImpl}.
+ * <p>
+ * This is what keeps the client's derived balance identical before and after a
+ * sync, and it is what prevents the same naira being counted twice — once in a
+ * device ledger and again in a mirror. Crediting the receiver's mirror here
+ * (an earlier design) did exactly that: the money was added to the mirror the
+ * client never displays while still counting in the device ledger, so on the
+ * receiver's device it appeared to vanish at sync while silently double-booking
+ * on the server. Audit-only settlement removes both problems.
  *
  * <h2>Authorization (signatures, not caller identity)</h2>
- * Because a receiver must be able to settle money they received even if the
+ * Because a receiver must be able to confirm money they received even if the
  * sender never reconnects, "the caller owns the sender phone" can no longer be
  * the guard — the caller is often not the sender. Each transfer instead
  * carries the sender's signature over a canonical description of that exact
  * transfer; we verify it against the sender wallet's registered public key
  * (see {@link TransferSignatureVerifier}). Whoever submits the batch, only a
- * transfer the genuine sender signed can move money, and it can only ever
- * credit the receiver the sender named. A rejected transfer persists nothing,
- * so a corrected one can be retried.
+ * transfer the genuine sender signed is accepted, and it can only ever name the
+ * receiver the sender named. A rejected transfer persists nothing, so a
+ * corrected one can be retried.
  * <p>
  * Note: signatures prove authorization, not that the sender had sufficient
- * offline float. Under Model B that sufficiency is the client's
+ * offline float. Under this model that sufficiency is the client's
  * responsibility (enforced at funding and before each offline spend); the
  * server does not re-check it. A future float-tracking layer can close the
  * residual collusion gap without changing this contract.
@@ -99,10 +110,11 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
      * retry full batches — already-processed refs are skipped silently.
      * <p>
      * {@code @Retryable} handles OptimisticLockingFailureException on
-     * Transaction rows; wallet locking uses PESSIMISTIC_WRITE to guarantee
-     * balance correctness. The two strategies are intentionally separated —
-     * pessimistic on wallets (financial critical), optimistic on transaction
-     * records (lower contention, audit trail).
+     * Transaction rows; wallet locking uses PESSIMISTIC_WRITE to serialise the
+     * per-pair critical section. The two strategies are intentionally separated
+     * — pessimistic on wallets (keeps a pair's records ordered and the inner
+     * idempotency check race-free), optimistic on transaction records (lower
+     * contention, audit trail).
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
@@ -176,7 +188,7 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
         }
 
         int totalSkipped = outerSkippedCount + innerSkippedCount;
-        int completedTransferCount = completedResponses.size() / 2; // two ledger entries per settled transfer
+        int completedTransferCount = completedResponses.size() / 2; // two ledger entries per recorded transfer
         int failedTransferCount = failedResponses.size();           // one entry per rejected/errored transfer
 
         String message = String.format("Processed %d new transfer(s): %d completed, %d failed, %d already-processed", newRequests.size(), completedTransferCount, failedTransferCount, totalSkipped);
@@ -190,8 +202,7 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
      *   <li>Re-check idempotency inside the lock (TOCTOU)</li>
      *   <li>Bind the signed wallet identifiers to the wallets actually loaded</li>
      *   <li>Verify the sender's signature against the sender wallet's registered key</li>
-     *   <li>Build DEBIT + CREDIT records and persist them FIRST</li>
-     *   <li>Apply the CREDIT to the receiver's mirror only — the sender's mirror is untouched (Model B)</li>
+     *   <li>Record DEBIT + CREDIT as audit entries — no mirror balance is moved</li>
      *   <li>Release locks in finally</li>
      * </ol>
      * Package-private (not private) so Spring's proxy could wrap it if this
@@ -218,7 +229,9 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
                 return ProcessingResult.skipped(request.getTransactionRef());
             }
 
-            // Fetch wallets under pessimistic write lock
+            // Fetch wallets under pessimistic write lock. We do not mutate their
+            // balances (see below), but the lock still serialises the per-pair
+            // critical section and keeps the inner idempotency check race-free.
             Wallet senderWallet = walletRepository.findByPhoneNumberWithLock(senderPhone)
                     .orElseThrow(() -> new NotFoundException(
                             "Sender wallet not found: " + senderPhone));
@@ -228,8 +241,8 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
                             "Receiver wallet not found: " + receiverPhone));
 
             // Bind the signed wallet identifiers to the wallets we actually
-            // loaded (by phone). The signature authorizes moving money between
-            // two specific walletIds; without this check a valid signature for
+            // loaded (by phone). The signature authorizes a transfer between two
+            // specific walletIds; without this check a valid signature for
             // "pay wallet B" could be redirected to wallet C by swapping the
             // phone in the request. Nothing is persisted on a mismatch.
             if (!Objects.equals(senderWallet.getWalletId(), request.getSenderWalletId())) {
@@ -264,19 +277,19 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
                 return ProcessingResult.rejected(request, "Transfer signature is invalid or the sender has no registered signing key");
             }
 
-            BigDecimal amount = MoneyUtils.normalize(request.getAmount());
+            // Mirror balances are read only to snapshot them onto the audit
+            // records — neither is changed by a sync (see class Javadoc).
             BigDecimal senderMirror = senderWallet.getMirrorBalance() != null
                     ? MoneyUtils.normalize(senderWallet.getMirrorBalance()) : ZERO;
-            BigDecimal receiverBalance = receiverWallet.getMirrorBalance() != null
+            BigDecimal receiverMirror = receiverWallet.getMirrorBalance() != null
                     ? MoneyUtils.normalize(receiverWallet.getMirrorBalance()) : ZERO;
-            BigDecimal receiverNewBalance = MoneyUtils.add(receiverBalance, amount);
 
             LocalDateTime now = LocalDateTime.now();
             String syncId = valueGeneratorService.generateSyncId();
 
-            // DEBIT — the sender's audit record. Model B: the sender's mirror is
-            // NOT touched (the money left the mirror at funding time), so the
-            // before/after snapshot is deliberately equal.
+            // DEBIT — the sender's audit record. A sync moves no mirror balance:
+            // the money left the sender's mirror at funding time and now lives in
+            // the sender's device ledger, so before == after.
             Transaction debit = mapper.buildEntry(request, DEBIT, TransactionStatus.COMPLETED, null);
             debit.setSenderBalanceBefore(senderMirror);
             debit.setSenderBalanceAfter(senderMirror);
@@ -284,29 +297,26 @@ public class TransactionSyncServiceImpl implements TransactionSyncService {
             debit.setSyncedAt(now);
             debit.setSyncId(syncId);
 
-            // CREDIT — the receiver's money actually arrives in the mirror.
+            // CREDIT — the receiver's audit record. The received money settles
+            // into the receiver's DEVICE ledger, not their online mirror, so the
+            // mirror is deliberately unchanged (before == after). The receiver
+            // moves it online later via an explicit transfer-to-online.
             Transaction credit = mapper.buildEntry(request, CREDIT, TransactionStatus.COMPLETED, null);
-            credit.setReceiverBalanceBefore(receiverBalance);
-            credit.setReceiverBalanceAfter(receiverNewBalance);
+            credit.setReceiverBalanceBefore(receiverMirror);
+            credit.setReceiverBalanceAfter(receiverMirror);
             credit.setCompletedAt(now);
             credit.setSyncedAt(now);
             credit.setSyncId(syncId);
 
-            // CRITICAL ORDERING — persist the ledger records BEFORE touching a
-            // balance, so a failed save leaves no balance changed and a failed
-            // balance update still rolls back both within this transaction.
+            // Persist the two audit records. No wallet is saved: a P2P sync is a
+            // record-keeping + idempotency operation, not a settlement to any
+            // mirror. Mirror balances change only on funding (mirror -> device)
+            // and transfer-to-online (device -> mirror), both elsewhere.
             transactionRepository.saveAll(List.of(debit, credit));
 
-            // Model B: only the receiver's mirror moves. The sender wallet is
-            // intentionally left untouched (not saved) — its mirror already
-            // parted with this money when the offline wallet was funded.
-            receiverWallet.setMirrorBalance(receiverNewBalance);
-            receiverWallet.setUpdatedAt(now);
-            walletRepository.save(receiverWallet);
-
-            log.info("[Sync] Transfer {} settled. Receiver {} mirror: {} → {} (sender {} mirror unchanged at {})",
-                    request.getTransactionRef(), request.getReceiverWalletId(), receiverBalance, receiverNewBalance,
-                    request.getSenderWalletId(), senderMirror);
+            log.info("[Sync] Transfer {} recorded (audit-only). No mirror moved — sender {} at {}, receiver {} at {}",
+                    request.getTransactionRef(), request.getSenderWalletId(), senderMirror,
+                    request.getReceiverWalletId(), receiverMirror);
             return ProcessingResult.success(debit, credit);
 
         } finally {

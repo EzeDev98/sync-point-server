@@ -35,19 +35,22 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for the batch sync engine under the signature-authorized,
- * Model B settlement.
+ * Unit tests for the batch sync engine under signature-authorized, audit-only
+ * settlement.
  * <p>
- * Two things changed shape from the pre-Model-B suite:
+ * Two things define this suite's shape:
  * <ul>
  *   <li><b>Authorization is a signature, not caller ownership.</b> There is no
  *       {@code CurrentUserService} anymore; the collaborator is
  *       {@link TransferSignatureVerifier}, mocked here so each test declares
  *       whether the transfer's signature verifies.</li>
- *   <li><b>Settlement credits the receiver only.</b> The sender's mirror is
- *       never touched (the money left it at funding time), so success saves
- *       only the receiver wallet, and there is no server-side insufficient-
- *       balance path — an amount larger than the sender's mirror still settles.</li>
+ *   <li><b>Sync is audit-only.</b> A P2P transfer moves value between two
+ *       device ledgers, not between mirrors, so a successful sync records the
+ *       DEBIT + CREDIT but saves no wallet and moves no mirror balance —
+ *       neither the sender's nor the receiver's. There is no server-side
+ *       insufficient-balance path either: an amount larger than the sender's
+ *       mirror is still recorded, because the mirror is not the source of an
+ *       offline spend.</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -151,7 +154,7 @@ class TransactionSyncServiceImplTest {
     }
 
     @Test
-    void syncTransactions_newTransfer_settles_creditsReceiverOnly_modelB() {
+    void syncTransactions_newTransfer_recorded_noMirrorMoved() {
         SyncTransactionRequest request = validRequest();
 
         when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
@@ -164,13 +167,13 @@ class TransactionSyncServiceImplTest {
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
-        // Model B: sender mirror untouched, only the receiver is credited.
+        // Audit-only: neither mirror moves, and no wallet is saved. The two
+        // ledger records are still persisted.
         assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
-        assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1500.00");
+        assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000.00");
 
         verify(transactionRepository).saveAll(anyList());
-        verify(walletRepository).save(receiverWallet);
-        verify(walletRepository, never()).save(senderWallet);
+        verify(walletRepository, never()).save(any());
         verify(walletRepository, never()).saveAll(anyList());
         verify(lockService).releaseAllLocks(List.of("08010000001", "08010000002"));
 
@@ -182,10 +185,11 @@ class TransactionSyncServiceImplTest {
     }
 
     @Test
-    void syncTransactions_amountExceedsSenderMirror_stillSettles_modelB() {
-        // Under Model B the server does not re-check sender funds — that is the
-        // client's responsibility. An amount larger than the sender's mirror
-        // still settles: the mirror is not the source of offline spend.
+    void syncTransactions_amountExceedsSenderMirror_stillRecorded() {
+        // The server does not re-check sender funds — that is the client's
+        // responsibility. An amount larger than the sender's mirror is still
+        // recorded: the mirror is not the source of an offline spend, and the
+        // sync moves no balance either way.
         SyncTransactionRequest request = validRequest();
         request.setAmount(new BigDecimal("999999.00"));
 
@@ -200,8 +204,9 @@ class TransactionSyncServiceImplTest {
         BaseResponse response = service.syncTransactions(List.of(request));
 
         assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
-        assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000999.00");
-        verify(walletRepository).save(receiverWallet);
+        assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000.00");
+        verify(transactionRepository).saveAll(anyList());
+        verify(walletRepository, never()).save(any());
 
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) response.getData();
