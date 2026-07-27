@@ -106,8 +106,8 @@ public class WalletProvisioningServiceImpl implements WalletProvisioningService 
 
         log.debug("Creating wallet for user ID: {} with amount: {}", user.getId(), amount);
 
-        SystemWallet systemWallet = systemWalletRepo.findByIdForUpdate(SYSTEM_WALLET_ID)
-                .orElseThrow(() -> new WalletNotFoundException("No system wallet found for the provided Id" + SYSTEM_WALLET_ID));
+        SystemWallet systemWallet = systemWalletRepo.findByNameForUpdate(SYSTEM_WALLET_ADMIN)
+                .orElseThrow(() -> new WalletNotFoundException("No system wallet found for the provided name " + SYSTEM_WALLET_ADMIN));
 
         BigDecimal balanceBeforeTransfer = systemWallet.getAvailableBalance();
 

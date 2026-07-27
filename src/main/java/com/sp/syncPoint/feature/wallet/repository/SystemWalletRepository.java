@@ -12,4 +12,8 @@ public interface SystemWalletRepository extends JpaRepository<SystemWallet, Long
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT systemWallet FROM SystemWallet systemWallet WHERE systemWallet.id = :id")
     Optional<SystemWallet> findByIdForUpdate(Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT systemWallet FROM SystemWallet systemWallet WHERE systemWallet.name = :name")
+    Optional<SystemWallet> findByNameForUpdate(String name);
 }

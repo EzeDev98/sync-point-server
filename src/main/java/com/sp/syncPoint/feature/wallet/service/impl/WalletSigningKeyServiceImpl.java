@@ -45,6 +45,7 @@ public class WalletSigningKeyServiceImpl implements WalletSigningKeyService {
     @Transactional
     @Override
     public BaseResponse registerSigningKey(String signingPublicKey) {
+
         if (signingPublicKey == null || signingPublicKey.isBlank()) {
             throw new BadRequestException("signingPublicKey is required");
         }
