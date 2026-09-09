@@ -72,6 +72,10 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/config/AppConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/config/RedissonConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/config/SwaggerCustomConfig.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/admin/dto/WipeRequest.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/admin/security/ResetAuthorizer.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/admin/service/DatabaseResetService.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/admin/web/AdminResetController.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/auth/dto/LoginResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/auth/dto/RegistrationRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/auth/dto/UserRegistrationResponse.java

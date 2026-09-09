@@ -1,10 +1,10 @@
 package com.sp.syncPoint.feature.transaction.web;
 
 import com.sp.syncPoint.feature.transaction.dto.SyncTransactionRequest;
-import com.sp.syncPoint.feature.wallet.dto.WalletTransferRequest;
+import com.sp.syncPoint.feature.wallet.dto.request.WalletTransferRequest;
 import com.sp.syncPoint.common.response.BaseResponse;
 import com.sp.syncPoint.feature.transaction.dto.TransactionResponse;
-import com.sp.syncPoint.feature.wallet.dto.WalletFundingResponse;
+import com.sp.syncPoint.feature.wallet.dto.response.WalletFundingResponse;
 import com.sp.syncPoint.feature.transaction.service.TransactionQueryService;
 import com.sp.syncPoint.feature.transaction.service.TransactionSyncService;
 import com.sp.syncPoint.feature.wallet.service.WalletFundingService;

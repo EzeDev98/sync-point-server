@@ -3,7 +3,7 @@ package com.sp.syncPoint.feature.wallet.service.impl;
 import com.sp.syncPoint.common.exception.EmptyFieldException;
 import com.sp.syncPoint.common.exception.InvalidPinException;
 import com.sp.syncPoint.common.response.BaseResponse;
-import com.sp.syncPoint.feature.wallet.dto.SetPinRequest;
+import com.sp.syncPoint.feature.wallet.dto.request.SetPinRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

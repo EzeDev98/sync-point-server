@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.wallet.dto;
+package com.sp.syncPoint.feature.wallet.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;

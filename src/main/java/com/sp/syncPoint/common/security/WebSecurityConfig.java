@@ -32,13 +32,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebSecurityConfig {
 
-    private final KeycloakJwtRolesConverter jwtAuthenticationConverter;
+    private final InternalAuthJwtRolesConverter jwtAuthenticationConverter;
 
     private final CustomAccessDenied customAccessDenied;
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
-    @Value("${keycloak.issuer-url}")
+    @Value("${internal-auth.issuer-url}")
     private String tokenIssuerUrl;
 
     @Bean
@@ -51,6 +51,10 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         .requestMatchers(HttpMethod.POST,"/api/v1/register-user").permitAll()
+
+                        .requestMatchers(HttpMethod.POST,"/api/v1/phone/verify-phone-number").permitAll()
+
+                        .requestMatchers(HttpMethod.POST,"/api/v1/phone/resend-phone-number-verification").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/login").permitAll()
 

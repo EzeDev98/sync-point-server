@@ -24,8 +24,8 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "keycloak_id")
-    private String keycloakId;
+    @Column(name = "internal_auth_id")
+    private String internalAuthId;
 
     @Column(name = "user_ref_id")
     private String userRefId;
@@ -41,9 +41,6 @@ public class User {
 
     @Column(name = "username")
     private String username;
-
-    @Column(name = "password")
-    private String password;
 
     @Column(name = "email")
     private String email;

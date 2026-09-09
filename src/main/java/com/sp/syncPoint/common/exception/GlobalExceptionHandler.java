@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
             Map.entry(PaymentFailedException.class, HttpStatus.BAD_REQUEST),
             Map.entry(AlreadyExistException.class, HttpStatus.CONFLICT),
             Map.entry(RegistrationException.class, HttpStatus.BAD_REQUEST),
-            Map.entry(KeycloakRegistrationFailedException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+            Map.entry(InternalAuthRegistrationFailedException.class, HttpStatus.INTERNAL_SERVER_ERROR),
             Map.entry(MaxAttemptsExceededException.class, HttpStatus.TOO_MANY_REQUESTS),
             Map.entry(UserAlreadyExistsException.class, HttpStatus.CONFLICT),
             Map.entry(LockAcquisitionException.class, HttpStatus.CONFLICT),

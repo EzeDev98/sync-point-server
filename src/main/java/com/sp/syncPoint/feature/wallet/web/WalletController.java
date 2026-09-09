@@ -1,13 +1,13 @@
 package com.sp.syncPoint.feature.wallet.web;
 
 
-import com.sp.syncPoint.feature.wallet.dto.PinRequest;
-import com.sp.syncPoint.feature.wallet.dto.SetPinRequest;
+import com.sp.syncPoint.feature.wallet.dto.request.PinRequest;
+import com.sp.syncPoint.feature.wallet.dto.request.SetPinRequest;
 
 import com.sp.syncPoint.feature.auth.dto.UserRequest;
 
-import com.sp.syncPoint.feature.wallet.dto.SigningKeyRequest;
-import com.sp.syncPoint.feature.wallet.dto.VerifyPinRequest;
+import com.sp.syncPoint.feature.wallet.dto.request.SigningKeyRequest;
+import com.sp.syncPoint.feature.wallet.dto.request.VerifyPinRequest;
 import com.sp.syncPoint.common.response.BaseResponse;
 import com.sp.syncPoint.feature.auth.dto.LoginResponse;
 import com.sp.syncPoint.feature.wallet.service.WalletAuthService;
@@ -43,6 +43,7 @@ public class WalletController {
         this.walletSigningKeyService = walletSigningKeyService;
         this.rateLimiterService = rateLimiterService;
     }
+
 
     @Operation(method = "POST", summary = "Wallet login", description = "This endpoint allows a User to successfully login to their wallet. When the login, most of the user's details are sent to the client for storage and subsequent usage.")
     @PostMapping("/wallet/login")

@@ -9,7 +9,6 @@ import com.sp.syncPoint.common.reset.ResetValidator;
 import com.sp.syncPoint.common.reset.delivery.OtpDeliveryService;
 import com.sp.syncPoint.common.reset.dto.VerifyOtpRequest;
 import com.sp.syncPoint.common.reset.dto.VerifyOtpResponse;
-import com.sp.syncPoint.feature.auth.service.impl.KeycloakService;
 import com.sp.syncPoint.feature.passwordreset.config.PasswordResetProperties;
 import com.sp.syncPoint.feature.passwordreset.dto.CompletePasswordResetRequest;
 import com.sp.syncPoint.feature.passwordreset.dto.PasswordResetRequestDto;
@@ -59,7 +58,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final OtpService otpService;
     private final OtpDeliveryService otpDeliveryService;
-    private final KeycloakService keycloakService;
     private final SessionManagementService sessionManagementService;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetProperties properties;
@@ -146,9 +144,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         // Update the identity provider first — if this fails, we abort
         // before touching the local mirror or invalidating sessions.
-        keycloakService.resetPassword(user.getKeycloakId(), request.getNewPassword());
+//        keycloakService.resetPassword(user.getKeycloakId(), request.getNewPassword());
 
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+//        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
         otpResetEngine.markUsed(resetToken, passwordResetTokenRepository::save);

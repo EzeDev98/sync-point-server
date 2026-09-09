@@ -56,8 +56,8 @@ public class CurrentUserService {
     }
 
     public User resolveUser(Jwt jwt) {
-        String keycloakId = jwt.getSubject();
-        return userRepository.findByKeycloakId(keycloakId)
+        String internalAuthId = jwt.getSubject();
+        return userRepository.findByInternalAuthId(internalAuthId)
                 .orElseThrow(() -> new UserNotFoundException("No local account found for the authenticated user"));
     }
 

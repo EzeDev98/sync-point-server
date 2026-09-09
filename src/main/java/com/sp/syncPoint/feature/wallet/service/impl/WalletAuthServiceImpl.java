@@ -1,5 +1,9 @@
 package com.sp.syncPoint.feature.wallet.service.impl;
 
+import com.sp.syncPoint.client.dto.request.LoginRequest;
+import com.sp.syncPoint.client.dto.response.InternalAuthApiResponse;
+import com.sp.syncPoint.client.dto.response.InternalAuthLoginResponse;
+import com.sp.syncPoint.client.service.InternalAuthClient;
 import com.sp.syncPoint.common.exception.ActiveSessionExistsException;
 import com.sp.syncPoint.common.exception.BadRequestException;
 import com.sp.syncPoint.common.exception.UnauthorizedException;
@@ -7,7 +11,6 @@ import com.sp.syncPoint.common.exception.WalletLockedException;
 import com.sp.syncPoint.common.support.EntityUtilityService;
 import com.sp.syncPoint.feature.auth.dto.LoginResponse;
 import com.sp.syncPoint.feature.auth.dto.UserRequest;
-import com.sp.syncPoint.feature.auth.service.AuthService;
 import com.sp.syncPoint.feature.session.service.SessionManagementService;
 import com.sp.syncPoint.feature.user.model.User;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
@@ -15,12 +18,11 @@ import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import com.sp.syncPoint.feature.wallet.service.WalletAuthService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.keycloak.representations.AccessTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientResponseException;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.MAX_LOGIN_ATTEMPTS;
 import static com.sp.syncPoint.common.constants.GeneralConstants.WALLET_LOCKED_DURATION;
@@ -48,11 +50,10 @@ public class WalletAuthServiceImpl implements WalletAuthService {
     private static final Logger log = LoggerFactory.getLogger(WalletAuthServiceImpl.class);
 
     private final WalletRepository walletRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthService authService;
     private final SessionManagementService sessionManagementService;
     private final EntityUtilityService entityUtilityService;
     private final WalletLockoutService walletLockoutService;
+    private final InternalAuthClient authClient;
 
     @Override
     @Transactional
@@ -61,6 +62,7 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty()) {
             throw new BadRequestException("Phone number is required");
         }
+
         if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
             throw new BadRequestException("Password is required");
         }
@@ -80,7 +82,12 @@ public class WalletAuthServiceImpl implements WalletAuthService {
             throw new EntityNotFoundException("No user associated with this wallet");
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        InternalAuthApiResponse<InternalAuthLoginResponse> authApiResponse;
+
+        try {
+           authApiResponse = authClient.login(new LoginRequest(user.getUsername(), request.getPassword()));
+        } catch (RestClientResponseException ex) {
+
             int attempts = walletLockoutService.recordFailedLoginAttempt(request.getPhoneNumber());
 
             log.warn("Invalid login attempt for phone: {}. Attempt {} of {}", request.getPhoneNumber(), attempts, MAX_LOGIN_ATTEMPTS);
@@ -96,15 +103,15 @@ public class WalletAuthServiceImpl implements WalletAuthService {
             throw new ActiveSessionExistsException("This account is currently active on another device. Please unlock and log out on that device before signing in here.");
         }
 
-        AccessTokenResponse accessTokenResponse = authService.authenticateUser(user.getUsername(), request.getPassword());
+        InternalAuthLoginResponse loginResponse = authApiResponse.getData();
         walletLockoutService.resetLoginAttempts(wallet);
 
-        sessionManagementService.createSession(user.getId(), request.getPhoneNumber(), accessTokenResponse.getToken());
+        sessionManagementService.createSession(user.getId(), request.getPhoneNumber(), loginResponse.getAccessToken());
         wallet.setStatus(true);
         walletRepository.save(wallet);
 
         log.info("Wallet login successful for user ID: {}", user.getUserRefId());
-        return new LoginResponse(accessTokenResponse.getToken(), accessTokenResponse.getRefreshToken(), accessTokenResponse.getExpiresIn(), accessTokenResponse.getRefreshExpiresIn(), request.getPhoneNumber(), user.getUsername(), user.getEmail(), user.getUserRefId(), wallet.getWalletId(), wallet.getMirrorBalance(), user.getId(), user.getFirstName(), user.getMiddleName(), user.getLastName(), wallet.getOfflineLimit(), wallet.isStatus());
+        return new LoginResponse(loginResponse.getAccessToken(), loginResponse.getRefreshToken(), loginResponse.getExpiresIn(), loginResponse.getRefreshExpiresIn(), request.getPhoneNumber(), user.getUsername(), user.getEmail(), user.getUserRefId(), wallet.getWalletId(), wallet.getMirrorBalance(), user.getId(), user.getFirstName(), user.getMiddleName(), user.getLastName(), wallet.getOfflineLimit(), wallet.isStatus());
     }
 
     @Override

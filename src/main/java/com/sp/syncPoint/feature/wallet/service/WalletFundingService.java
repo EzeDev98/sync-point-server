@@ -1,7 +1,7 @@
 package com.sp.syncPoint.feature.wallet.service;
 
-import com.sp.syncPoint.feature.wallet.dto.WalletTransferRequest;
-import com.sp.syncPoint.feature.wallet.dto.WalletFundingResponse;
+import com.sp.syncPoint.feature.wallet.dto.request.WalletTransferRequest;
+import com.sp.syncPoint.feature.wallet.dto.response.WalletFundingResponse;
 
 /**
  * Moves funds between a user's online mirror balance and their offline

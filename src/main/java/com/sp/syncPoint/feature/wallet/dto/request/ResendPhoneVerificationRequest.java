@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.wallet.dto;
+package com.sp.syncPoint.feature.wallet.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,11 +7,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-public class PinRequest {
+@AllArgsConstructor
+public class ResendPhoneVerificationRequest {
     private String phoneNumber;
-    private String oldPin;
-    private String pin;
-    private String confirmNewPin;
 }
