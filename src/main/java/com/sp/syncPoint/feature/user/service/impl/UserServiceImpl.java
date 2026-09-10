@@ -20,6 +20,7 @@ import com.sp.syncPoint.feature.wallet.service.WalletProvisioningService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import static com.sp.syncPoint.common.constants.GeneralConstants.DATE_FORMAT;
 
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
@@ -79,12 +81,14 @@ public class UserServiceImpl implements UserService {
 
         RegisterResponse response = registerResponse.getData();
 
+        log.info("Internal auth registration response {}", response);
+
         try {
-            User user = createUser(request, response.getInternalAuthUserId());
+            User user = createUser(request, response.getUserId());
             walletService.setupWallet(user);
             return new UserRegistrationResponse(user.getUsername(), HttpServletResponse.SC_CREATED, "User registered successfully. Check your Mailbox or SMS for the verification code.");
         } catch (InternalAuthRegistrationFailedException ex) {
-            authClient.deleteUser(response.getInternalAuthUserId());
+            authClient.deleteUser(response.getUserId());
             throw new RegistrationException("Registration failed, all changes have been rolled back: " + ex.getMessage());
         }
     }

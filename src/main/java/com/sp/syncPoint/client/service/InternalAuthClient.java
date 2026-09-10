@@ -73,7 +73,6 @@ public class InternalAuthClient {
                         .queryParam("internalAuthUserId", internalAuthUserId)
                         .build())
                 .retrieve()
-                .body(new ParameterizedTypeReference<InternalAuthApiResponse<Void>>() {
-                });
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<Void>>() {});
     }
 }

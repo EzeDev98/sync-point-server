@@ -10,10 +10,12 @@ import com.sp.syncPoint.feature.wallet.dto.request.ResendPhoneVerificationReques
 import com.sp.syncPoint.feature.wallet.dto.request.VerifyPhoneRequest;
 import com.sp.syncPoint.feature.wallet.service.PhoneVerificationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class PhoneVerificationServiceImpl implements PhoneVerificationService {
 

@@ -16,7 +16,16 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterResponse {
-    private String internalAuthUserId;
+    private String userId;
     private String username;
     private String message;
+
+    @Override
+    public String toString() {
+        return "RegisterResponse{" +
+                "userId='" + userId + '\'' +
+                ", username='" + username + '\'' +
+                ", message='" + message + '\'' +
+                '}';
+    }
 }
