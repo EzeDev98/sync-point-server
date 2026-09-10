@@ -134,7 +134,7 @@ class PinResetServiceImplTest {
         PinResetResponse response = service.requestOtp(request);
 
         assertThat(response.getStatusCode()).isEqualTo(200);
-        verify(otpDeliveryService).sendPasswordResetOtp("08010000001", "654321");
+        verify(otpDeliveryService).sendResetOtp("08010000001", "654321");
         ArgumentCaptor<PinResetOtp> captor = ArgumentCaptor.forClass(PinResetOtp.class);
         verify(pinResetOtpRepository).save(captor.capture());
         assertThat(captor.getValue().getWalletId()).isEqualTo(7L);

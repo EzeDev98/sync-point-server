@@ -4,12 +4,12 @@ package com.sp.syncPoint.feature.wallet.web;
 import com.sp.syncPoint.feature.wallet.dto.request.PinRequest;
 import com.sp.syncPoint.feature.wallet.dto.request.SetPinRequest;
 
-import com.sp.syncPoint.feature.auth.dto.UserRequest;
+import com.sp.syncPoint.feature.auth.dto.request.UserRequest;
 
 import com.sp.syncPoint.feature.wallet.dto.request.SigningKeyRequest;
 import com.sp.syncPoint.feature.wallet.dto.request.VerifyPinRequest;
 import com.sp.syncPoint.common.response.BaseResponse;
-import com.sp.syncPoint.feature.auth.dto.LoginResponse;
+import com.sp.syncPoint.feature.auth.dto.response.LoginResponse;
 import com.sp.syncPoint.feature.wallet.service.WalletAuthService;
 import com.sp.syncPoint.feature.wallet.service.WalletPinService;
 

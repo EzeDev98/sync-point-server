@@ -22,12 +22,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     boolean existsByTransactionReference(String transactionReference);
 
-    Optional<Transaction> findByTransactionReference(String transactionReference);
-
     Optional<Transaction> findByRequestRef(String requestRef);
 
     List<Transaction> findByTransactionReferenceIn(List<String> transactionReferences);
 
-    @Query("SELECT t FROM Transaction t " + "WHERE t.senderWalletPhoneNumber = :phone " + "   OR t.receiverWalletPhoneNumber = :phone " + "ORDER BY t.createdAt DESC")
-    List<Transaction> findTransactionsByPhoneNumber(@Param("phone") String phoneNumber);
 }

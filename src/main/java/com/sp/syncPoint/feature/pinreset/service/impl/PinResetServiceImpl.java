@@ -102,7 +102,7 @@ public class PinResetServiceImpl implements PinResetService {
         otpResetEngine.populateNewOtp(otpEntity, phoneNumber, rawOtp, properties.getOtp().getExpirationMinutes(), properties.getOtp().getMaxAttempts());
         pinResetOtpRepository.save(otpEntity);
 
-        otpDeliveryService.sendPasswordResetOtp(phoneNumber, rawOtp);
+        otpDeliveryService.sendResetOtp(phoneNumber, rawOtp);
         otpResetEngine.startCooldown(cooldownBucket, properties.getOtp().getResendCooldownSeconds());
 
         log.info("PIN reset OTP requested for wallet belonging to user: {}", phoneNumber);
@@ -133,6 +133,7 @@ public class PinResetServiceImpl implements PinResetService {
     @Override
     @Transactional
     public PinResetResponse completeReset(CompletePinResetRequest request) {
+
         if (request.getResetToken() == null || request.getResetToken().isBlank()) {
             throw new ResetTokenInvalidException("Your PIN reset session has expired. Please start again.");
         }
@@ -147,7 +148,6 @@ public class PinResetServiceImpl implements PinResetService {
                 .orElseThrow(() -> new NotFoundException("Wallet not found"));
 
         walletService.resetPin(wallet.getPhoneNumber(), request.getPin(), request.getConfirmNewPin());
-
         otpResetEngine.markUsed(resetToken, pinResetTokenRepository::save);
 
         log.info("PIN reset completed successfully for wallet id {}", wallet.getId());

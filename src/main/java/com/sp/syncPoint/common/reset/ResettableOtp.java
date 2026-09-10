@@ -1,13 +1,12 @@
 package com.sp.syncPoint.common.reset;
 
 import com.sp.syncPoint.feature.passwordreset.enums.PasswordResetStatus;
-import com.sp.syncPoint.feature.passwordreset.model.PasswordResetOtp;
 import com.sp.syncPoint.feature.pinreset.model.PinResetOtp;
 
 import java.time.LocalDateTime;
 
 /**
- * Common shape shared by {@link PasswordResetOtp} and {@link PinResetOtp}.
+ * Common shape shared by {@link PinResetOtp}.
  * <p>
  * Implementing this adds no persistence behavior whatsoever — it's a plain
  * Java interface, not a JPA mapping construct, so it has zero effect on

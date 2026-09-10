@@ -16,11 +16,11 @@ public interface TransactionQueryService {
 
     List<TransactionResponse> getAllTransactions();
 
-    List<TransactionResponse> getTransactionsByWmUniqueId(String wmUniqueId);
+    List<TransactionResponse> getTransactionsBySpId(String spId);
 
-    List<TransactionResponse> getTransactionsByWmUniqueId(String userWmUniqueId, String receiverWmUniqueId);
+    List<TransactionResponse> getTransactionsBySpId(String userSpId, String receiverSpId);
 
-    List<TransactionResponse> getLatestTransactionsByWmUniqueId(String wmUniqueId);
+    List<TransactionResponse> getLatestTransactionsBySpId(String SpId);
 
     String deleteTransactions();
 

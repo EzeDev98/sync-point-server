@@ -15,5 +15,5 @@ public interface OtpDeliveryService {
      * @param phoneNumber the recipient's registered phone number
      * @param otp         the raw (unhashed) OTP to deliver
      */
-    void sendPasswordResetOtp(String phoneNumber, String otp);
+    void sendResetOtp(String phoneNumber, String otp);
 }

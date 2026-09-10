@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.passwordreset.dto;
+package com.sp.syncPoint.client.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,4 +12,5 @@ import lombok.Setter;
 public class PasswordResetResponse {
     private String message;
     private int statusCode;
+    private String phoneNumber;
 }

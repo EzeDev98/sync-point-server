@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.auth.dto;
+package com.sp.syncPoint.feature.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

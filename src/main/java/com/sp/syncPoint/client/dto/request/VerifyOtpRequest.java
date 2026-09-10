@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.pinreset.dto;
+package com.sp.syncPoint.client.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class VerifyPinOtpRequest {
+public class VerifyOtpRequest {
     private String phoneNumber;
     private String otp;
 }

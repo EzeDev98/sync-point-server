@@ -2,8 +2,8 @@ package com.sp.syncPoint.feature.wallet.service;
 
 import com.sp.syncPoint.common.exception.ActiveSessionExistsException;
 import com.sp.syncPoint.common.exception.WalletLockedException;
-import com.sp.syncPoint.feature.auth.dto.UserRequest;
-import com.sp.syncPoint.feature.auth.dto.LoginResponse;
+import com.sp.syncPoint.feature.auth.dto.request.UserRequest;
+import com.sp.syncPoint.feature.auth.dto.response.LoginResponse;
 
 /**
  * Wallet-scoped authentication: credential verification, login-attempt

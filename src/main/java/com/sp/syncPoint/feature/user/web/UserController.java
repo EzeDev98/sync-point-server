@@ -1,7 +1,7 @@
 package com.sp.syncPoint.feature.user.web;
 
-import com.sp.syncPoint.feature.auth.dto.RegistrationRequest;
-import com.sp.syncPoint.feature.auth.dto.UserRegistrationResponse;
+import com.sp.syncPoint.feature.auth.dto.request.RegistrationRequest;
+import com.sp.syncPoint.feature.auth.dto.response.UserRegistrationResponse;
 import com.sp.syncPoint.feature.user.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;

@@ -1,11 +1,7 @@
 package com.sp.syncPoint.client.service;
 
-import com.sp.syncPoint.client.dto.request.LoginRequest;
-import com.sp.syncPoint.client.dto.request.RegisterRequest;
-import com.sp.syncPoint.client.dto.response.ActivationResponse;
-import com.sp.syncPoint.client.dto.response.InternalAuthApiResponse;
-import com.sp.syncPoint.client.dto.response.InternalAuthLoginResponse;
-import com.sp.syncPoint.client.dto.response.RegisterResponse;
+import com.sp.syncPoint.client.dto.request.*;
+import com.sp.syncPoint.client.dto.response.*;
 import com.sp.syncPoint.feature.wallet.dto.request.ResendPhoneVerificationRequest;
 import com.sp.syncPoint.feature.wallet.dto.request.VerifyPhoneRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +44,15 @@ public class InternalAuthClient {
                 .body(new ParameterizedTypeReference<InternalAuthApiResponse<InternalAuthLoginResponse>>() {});
     }
 
+    public InternalAuthApiResponse<LoginResponse> refreshToken(RefreshTokenRequest request) {
+        return restClient.post()
+                .uri("/auth/refresh-token")
+                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<LoginResponse>>() {});
+    }
+
     public InternalAuthApiResponse<ActivationResponse> verifyPhone(VerifyPhoneRequest request) {
         return restClient.post()
                 .uri("/auth/verify-phone")
@@ -64,6 +69,43 @@ public class InternalAuthClient {
                 .body(request)
                 .retrieve()
                 .body(new ParameterizedTypeReference<InternalAuthApiResponse<ActivationResponse>>() {});
+    }
+
+    public InternalAuthApiResponse<PasswordResetResponse> requestPasswordResetOtp(PasswordResetRequest request) {
+        return restClient.post()
+                .uri("/password-reset/request")
+                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<PasswordResetResponse>>() {});
+    }
+
+    public InternalAuthApiResponse<VerifyOtpResponse> verifyPasswordResetOtp(VerifyOtpRequest request) {
+        return restClient.post()
+                .uri("/password-reset/verify-otp")
+                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<VerifyOtpResponse>>() {});
+    }
+
+    public InternalAuthApiResponse<PasswordResetResponse> completeReset(CompletePasswordResetRequest request) {
+        return restClient.post()
+                .uri("/password-reset/complete")
+                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
+                .body(request)
+                .retrieve()
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<PasswordResetResponse>>() {});
+    }
+
+    public InternalAuthApiResponse<LogoutResponse> logout(String accessToken) {
+        return restClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/session")
+                        .build())
+                .header(HttpHeaders.AUTHORIZATION,"Bearer " + accessToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<LogoutResponse>>() {});
     }
 
     public void deleteUser(String internalAuthUserId) {

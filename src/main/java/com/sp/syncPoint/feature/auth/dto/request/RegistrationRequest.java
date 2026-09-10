@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.auth.dto;
+package com.sp.syncPoint.feature.auth.dto.request;
 
 import com.sp.syncPoint.feature.user.enums.GenderStatus;
 import lombok.AllArgsConstructor;

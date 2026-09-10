@@ -5,8 +5,8 @@
 //import com.sp.syncPoint.common.exception.UnauthorizedException;
 //import com.sp.syncPoint.common.exception.WalletLockedException;
 //import com.sp.syncPoint.common.support.EntityUtilityService;
-//import com.sp.syncPoint.feature.auth.dto.LoginResponse;
-//import com.sp.syncPoint.feature.auth.dto.UserRequest;
+//import com.sp.syncPoint.feature.auth.dto.response.LoginResponse;
+//import com.sp.syncPoint.feature.auth.dto.request.UserRequest;
 //import com.sp.syncPoint.feature.auth.service.AuthService;
 //import com.sp.syncPoint.feature.session.service.SessionManagementService;
 //import com.sp.syncPoint.feature.user.model.User;

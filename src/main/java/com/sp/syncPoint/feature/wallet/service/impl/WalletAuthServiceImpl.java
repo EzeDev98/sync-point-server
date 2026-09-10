@@ -9,8 +9,8 @@ import com.sp.syncPoint.common.exception.BadRequestException;
 import com.sp.syncPoint.common.exception.UnauthorizedException;
 import com.sp.syncPoint.common.exception.WalletLockedException;
 import com.sp.syncPoint.common.support.EntityUtilityService;
-import com.sp.syncPoint.feature.auth.dto.LoginResponse;
-import com.sp.syncPoint.feature.auth.dto.UserRequest;
+import com.sp.syncPoint.feature.auth.dto.response.LoginResponse;
+import com.sp.syncPoint.feature.auth.dto.request.UserRequest;
 import com.sp.syncPoint.feature.session.service.SessionManagementService;
 import com.sp.syncPoint.feature.user.model.User;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
@@ -18,6 +18,7 @@ import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import com.sp.syncPoint.feature.wallet.service.WalletAuthService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -43,11 +44,10 @@ import static com.sp.syncPoint.common.constants.GeneralConstants.WALLET_LOCKED_D
  * along with the identical copy in {@code WalletPinServiceImpl} — into the
  * lockout service. No behaviour changed in the move.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WalletAuthServiceImpl implements WalletAuthService {
-
-    private static final Logger log = LoggerFactory.getLogger(WalletAuthServiceImpl.class);
 
     private final WalletRepository walletRepository;
     private final SessionManagementService sessionManagementService;

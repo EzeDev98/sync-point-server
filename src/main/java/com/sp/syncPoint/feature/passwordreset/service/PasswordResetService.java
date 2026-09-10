@@ -1,10 +1,11 @@
 package com.sp.syncPoint.feature.passwordreset.service;
 
-import com.sp.syncPoint.feature.passwordreset.dto.CompletePasswordResetRequest;
-import com.sp.syncPoint.feature.passwordreset.dto.PasswordResetRequestDto;
-import com.sp.syncPoint.common.reset.dto.VerifyOtpRequest;
-import com.sp.syncPoint.feature.passwordreset.dto.PasswordResetResponse;
-import com.sp.syncPoint.common.reset.dto.VerifyOtpResponse;
+
+import com.sp.syncPoint.client.dto.request.CompletePasswordResetRequest;
+import com.sp.syncPoint.client.dto.request.PasswordResetRequest;
+import com.sp.syncPoint.client.dto.request.VerifyOtpRequest;
+import com.sp.syncPoint.client.dto.response.PasswordResetResponse;
+import com.sp.syncPoint.client.dto.response.VerifyOtpResponse;
 
 public interface PasswordResetService {
 
@@ -13,7 +14,7 @@ public interface PasswordResetService {
      * returns a generic success response, regardless of whether the phone
      * number is registered, to prevent user enumeration.
      */
-    PasswordResetResponse requestOtp(PasswordResetRequestDto request);
+    PasswordResetResponse requestOtp(PasswordResetRequest request);
 
     /**
      * Verifies a submitted OTP and, on success, issues a short-lived,

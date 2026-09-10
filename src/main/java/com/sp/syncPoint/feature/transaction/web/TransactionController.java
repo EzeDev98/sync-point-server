@@ -43,22 +43,22 @@ public class TransactionController {
         return ResponseEntity.ok(transactionResponses);
     }
 
-    @Operation(method = "GET", summary = "Fetch transactions by user's WM ID", description = "Fetches all transactions where the user is either sender or receiver")
-    @GetMapping("/transactions/{wmUniqueId}")
-    public List<TransactionResponse> getTransactionsByWmUniqueId(@PathVariable String wmUniqueId) {
-        return transactionQueryService.getTransactionsByWmUniqueId(wmUniqueId);
+    @Operation(method = "GET", summary = "Fetch transactions by user's SP ID", description = "Fetches all transactions where the user is either sender or receiver")
+    @GetMapping("/transactions/{spId}")
+    public List<TransactionResponse> getTransactionsBySpId(@PathVariable String spId) {
+        return transactionQueryService.getTransactionsBySpId(spId);
     }
 
     @Operation(method = "GET", summary = "Fetch transactions between two specific parties", description = "Fetches transactions where first user is sender and second is receiver, or vice versa")
     @GetMapping("/transactions")
-    public List<TransactionResponse> fetchSenderAndReceiverTransactionsByWmUniqueId(@RequestParam String senderWmUniqueId, @RequestParam String receiverWmUniqueId) {
-        return transactionQueryService.getTransactionsByWmUniqueId(senderWmUniqueId, receiverWmUniqueId);
+    public List<TransactionResponse> fetchSenderAndReceiverTransactionsBySpId(@RequestParam String senderSpId, @RequestParam String receiverSpId) {
+        return transactionQueryService.getTransactionsBySpId(senderSpId, receiverSpId);
     }
 
-    @Operation(method = "GET", summary = "Fetch latest transactions by user's WM ID", description = "Fetches all latest transactions where the user is either sender or receiver")
-    @GetMapping("/transactions/latest/{wmUniqueId}")
-    public List<TransactionResponse> fetchLatestTransactionsByWmUniqueId(@PathVariable String wmUniqueId) {
-        return transactionQueryService.getLatestTransactionsByWmUniqueId(wmUniqueId);
+    @Operation(method = "GET", summary = "Fetch latest transactions by user's SP ID", description = "Fetches all latest transactions where the user is either sender or receiver")
+    @GetMapping("/transactions/latest/{spId}")
+    public List<TransactionResponse> fetchLatestTransactionsBySpId(@PathVariable String spId) {
+        return transactionQueryService.getLatestTransactionsBySpId(spId);
     }
 
     @Operation(method = "DELETE", summary = "Delete all transactions", description = "This endpoint allows for the deletion of all transactions in the offline payment database.")
@@ -67,7 +67,6 @@ public class TransactionController {
     public ResponseEntity<String> deleteAllTransactions() {
         return ResponseEntity.ok(transactionQueryService.deleteTransactions());
     }
-
 
     @Operation(method = "POST", summary = "Save mirror balance", description = "This endpoint allows for the Saving of mirror balance in the offline payment database.")
     @PostMapping("/save/mirror-balance")

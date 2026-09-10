@@ -14,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -38,11 +39,10 @@ import static com.sp.syncPoint.common.constants.GeneralConstants.MAX_PIN_CHANGE_
  * {@link WalletProvisioningServiceImpl}, login in
  * {@link WalletAuthServiceImpl}; no behaviour changed during any split.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WalletPinServiceImpl implements WalletPinService {
-
-    private static final Logger log = LoggerFactory.getLogger(WalletPinServiceImpl.class);
 
     private final WalletRepository walletRepository;
     private final PinHasher pinHasher;

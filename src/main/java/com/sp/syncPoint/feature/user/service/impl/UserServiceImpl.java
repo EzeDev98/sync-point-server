@@ -7,14 +7,14 @@ import com.sp.syncPoint.client.service.InternalAuthClient;
 import com.sp.syncPoint.common.util.UniqueValueGeneratorService;
 import com.sp.syncPoint.feature.auth.service.impl.RegistrationValidator;
 
-import com.sp.syncPoint.feature.auth.dto.RegistrationRequest;
+import com.sp.syncPoint.feature.auth.dto.request.RegistrationRequest;
 import com.sp.syncPoint.feature.user.enums.UserStatus;
 import com.sp.syncPoint.common.exception.InternalAuthRegistrationFailedException;
 import com.sp.syncPoint.common.exception.RegistrationException;
 import com.sp.syncPoint.common.exception.UserAlreadyExistsException;
 import com.sp.syncPoint.feature.user.model.User;
 import com.sp.syncPoint.feature.user.repository.UserRepository;
-import com.sp.syncPoint.feature.auth.dto.UserRegistrationResponse;
+import com.sp.syncPoint.feature.auth.dto.response.UserRegistrationResponse;
 import com.sp.syncPoint.feature.user.service.UserService;
 import com.sp.syncPoint.feature.wallet.service.WalletProvisioningService;
 
@@ -80,8 +80,6 @@ public class UserServiceImpl implements UserService {
         InternalAuthApiResponse<RegisterResponse> registerResponse = authClient.register(registerRequest);
 
         RegisterResponse response = registerResponse.getData();
-
-        log.info("Internal auth registration response {}", response);
 
         try {
             User user = createUser(request, response.getUserId());

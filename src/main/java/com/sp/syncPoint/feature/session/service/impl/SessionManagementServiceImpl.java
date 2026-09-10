@@ -6,6 +6,7 @@ import com.sp.syncPoint.feature.session.dto.InvalidatedSessionResponse;
 import com.sp.syncPoint.feature.session.service.SessionManagementService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,10 @@ import java.time.LocalDateTime;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.*;
 
+@Slf4j
 @Service
 public class SessionManagementServiceImpl implements SessionManagementService {
 
-    private static final Logger log = LoggerFactory.getLogger(SessionManagementServiceImpl.class);
     private final UserSessionRepository userSessionRepository;
 
     public SessionManagementServiceImpl(UserSessionRepository userSessionRepository) {

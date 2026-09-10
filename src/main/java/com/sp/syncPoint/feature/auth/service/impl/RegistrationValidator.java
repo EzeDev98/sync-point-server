@@ -1,6 +1,6 @@
 package com.sp.syncPoint.feature.auth.service.impl;
 
-import com.sp.syncPoint.feature.auth.dto.RegistrationRequest;
+import com.sp.syncPoint.feature.auth.dto.request.RegistrationRequest;
 import com.sp.syncPoint.common.exception.RegistrationException;
 import org.springframework.stereotype.Component;
 

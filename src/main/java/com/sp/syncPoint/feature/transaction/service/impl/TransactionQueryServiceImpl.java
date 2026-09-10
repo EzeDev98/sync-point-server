@@ -64,26 +64,26 @@ public class TransactionQueryServiceImpl implements TransactionQueryService {
     }
 
     @Override
-    public List<TransactionResponse> getTransactionsByWmUniqueId(String userWmUniqueId, String receiverWmUniqueId) {
+    public List<TransactionResponse> getTransactionsBySpId(String senderSpId, String receiverSpId) {
 
-        if (userWmUniqueId == null || receiverWmUniqueId == null) {
-            throw new EmptyFieldException("wmUniqueId cannot be null or empty", HttpStatus.BAD_REQUEST);
+        if (senderSpId == null || receiverSpId == null) {
+            throw new EmptyFieldException("spId cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
 
-        boolean ownsSender = walletRepository.findByWalletId(userWmUniqueId)
-                .map(w -> currentUserService.ownsPhoneNumber(w.getPhoneNumber()))
+        boolean ownsSender = walletRepository.findByWalletId(senderSpId)
+                .map(wallet -> currentUserService.ownsPhoneNumber(wallet.getPhoneNumber()))
                 .orElse(false);
-        boolean ownsReceiver = walletRepository.findByWalletId(receiverWmUniqueId)
-                .map(w -> currentUserService.ownsPhoneNumber(w.getPhoneNumber()))
+        boolean ownsReceiver = walletRepository.findByWalletId(receiverSpId)
+                .map(wallet -> currentUserService.ownsPhoneNumber(wallet.getPhoneNumber()))
                 .orElse(false);
 
         if (!ownsSender && !ownsReceiver) {
             throw new AccessDeniedException("You do not have permission to access this resource");
         }
 
-        List<Transaction> transactions = transactionRepository.findBySenderWalletIdOrReceiverWalletId(userWmUniqueId, receiverWmUniqueId);
+        List<Transaction> transactions = transactionRepository.findBySenderWalletIdOrReceiverWalletId(senderSpId, receiverSpId);
         if (transactions == null || transactions.isEmpty()) {
-            log.error("No transactions found for user with wmUniqueId: {} and receiverWmUniqueId: {}", userWmUniqueId, receiverWmUniqueId);
+            log.error("No transactions found for user with senderSpId: {} and receiverSpId: {}", senderSpId, receiverSpId);
             return Collections.emptyList();
         }
 
@@ -91,19 +91,19 @@ public class TransactionQueryServiceImpl implements TransactionQueryService {
     }
 
     @Override
-    public List<TransactionResponse> getTransactionsByWmUniqueId(String wmUniqueId) {
+    public List<TransactionResponse> getTransactionsBySpId(String spId) {
 
-        if (wmUniqueId == null) {
-            throw new EmptyFieldException("wmUniqueId cannot be null or empty", HttpStatus.BAD_REQUEST);
+        if (spId == null) {
+            throw new EmptyFieldException("SpId cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
 
-        Wallet wallet = walletRepository.findByWalletId(wmUniqueId)
+        Wallet wallet = walletRepository.findByWalletId(spId)
                 .orElseThrow(() -> new WalletNotFoundException("No wallet found for the ID provided"));
         currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
 
-        List<Transaction> transactions = transactionRepository.findTransactionByWalletId(wmUniqueId);
+        List<Transaction> transactions = transactionRepository.findTransactionByWalletId(spId);
         if (transactions == null || transactions.isEmpty()) {
-            log.error("No transactions found for user with wmUniqueId: {}", wmUniqueId);
+            log.error("No transactions found for user with spId: {}", spId);
             return Collections.emptyList();
         }
 
@@ -111,19 +111,19 @@ public class TransactionQueryServiceImpl implements TransactionQueryService {
     }
 
     @Override
-    public List<TransactionResponse> getLatestTransactionsByWmUniqueId(String wmUniqueId) {
+    public List<TransactionResponse> getLatestTransactionsBySpId(String spId) {
 
-        if (wmUniqueId == null) {
-            throw new EmptyFieldException("wmUniqueId cannot be null or empty", HttpStatus.BAD_REQUEST);
+        if (spId == null) {
+            throw new EmptyFieldException("SpId cannot be null or empty", HttpStatus.BAD_REQUEST);
         }
 
-        Wallet wallet = walletRepository.findByWalletId(wmUniqueId)
+        Wallet wallet = walletRepository.findByWalletId(spId)
                 .orElseThrow(() -> new WalletNotFoundException("No wallet found for the ID provided"));
         currentUserService.assertOwnsPhoneNumber(wallet.getPhoneNumber());
 
-        List<Transaction> transactions = transactionRepository.findLatestTransactionByWalletId(wmUniqueId, PageRequest.of(0, 10));
+        List<Transaction> transactions = transactionRepository.findLatestTransactionByWalletId(spId, PageRequest.of(0, 10));
         if (transactions == null || transactions.isEmpty()) {
-            log.error("No transactions found for user with wmUniqueId: {}", wmUniqueId);
+            log.error("No transactions found for user with spId: {}", spId);
             return Collections.emptyList();
         }
 

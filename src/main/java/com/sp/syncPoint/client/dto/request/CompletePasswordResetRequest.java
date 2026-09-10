@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.passwordreset.dto;
+package com.sp.syncPoint.client.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

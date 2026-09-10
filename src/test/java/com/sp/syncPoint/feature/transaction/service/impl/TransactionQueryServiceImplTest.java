@@ -72,34 +72,34 @@ class TransactionQueryServiceImplTest {
     }
 
     @Test
-    void getTransactionsByWmUniqueId_nullId_throwsEmptyFieldException() {
-        assertThatThrownBy(() -> service.getTransactionsByWmUniqueId((String) null))
+    void getTransactionsBySpId_nullId_throwsEmptyFieldException() {
+        assertThatThrownBy(() -> service.getTransactionsBySpId((String) null))
                 .isInstanceOf(EmptyFieldException.class);
     }
 
     @Test
-    void getTransactionsByWmUniqueId_walletNotFound_throwsWalletNotFoundException() {
-        when(walletRepository.findByWalletId("WM-1")).thenReturn(Optional.empty());
+    void getTransactionsBySpId_walletNotFound_throwsWalletNotFoundException() {
+        when(walletRepository.findByWalletId("SP-1")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getTransactionsByWmUniqueId("WM-1"))
+        assertThatThrownBy(() -> service.getTransactionsBySpId("SP-1"))
                 .isInstanceOf(WalletNotFoundException.class);
     }
 
     @Test
-    void getTransactionsByWmUniqueId_callerDoesNotOwnWallet_isDenied() {
+    void getTransactionsBySpId_callerDoesNotOwnWallet_isDenied() {
         Wallet wallet = new Wallet();
         wallet.setPhoneNumber("08010000001");
-        when(walletRepository.findByWalletId("WM-1")).thenReturn(Optional.of(wallet));
+        when(walletRepository.findByWalletId("SP-1")).thenReturn(Optional.of(wallet));
         org.mockito.Mockito.doThrow(new AccessDeniedException("denied"))
                 .when(currentUserService).assertOwnsPhoneNumber("08010000001");
 
-        assertThatThrownBy(() -> service.getTransactionsByWmUniqueId("WM-1"))
+        assertThatThrownBy(() -> service.getTransactionsBySpId("SP-1"))
                 .isInstanceOf(AccessDeniedException.class);
         verify(transactionRepository, never()).findTransactionByWalletId(any());
     }
 
     @Test
-    void getTransactionsByWmUniqueId_ownedWallet_returnsTransactions() {
+    void getTransactionsBySpId_ownedWallet_returnsTransactions() {
         Wallet wallet = new Wallet();
         wallet.setPhoneNumber("08010000001");
         Transaction transaction = new Transaction();
@@ -108,20 +108,20 @@ class TransactionQueryServiceImplTest {
         transaction.setEntryType(com.sp.syncPoint.feature.transaction.enums.EntryType.CREDIT);
         transaction.setStatus(com.sp.syncPoint.feature.transaction.enums.TransactionStatus.COMPLETED);
 
-        when(walletRepository.findByWalletId("WM-1")).thenReturn(Optional.of(wallet));
-        when(transactionRepository.findTransactionByWalletId("WM-1")).thenReturn(List.of(transaction));
+        when(walletRepository.findByWalletId("SP-1")).thenReturn(Optional.of(wallet));
+        when(transactionRepository.findTransactionByWalletId("SP-1")).thenReturn(List.of(transaction));
 
-        List<TransactionResponse> responses = service.getTransactionsByWmUniqueId("WM-1");
+        List<TransactionResponse> responses = service.getTransactionsBySpId("SP-1");
 
         assertThat(responses).hasSize(1);
     }
 
     @Test
     void getTransactionsBetweenTwoParties_neitherOwnedByCaller_isDenied() {
-        when(walletRepository.findByWalletId("WM-SENDER")).thenReturn(Optional.empty());
-        when(walletRepository.findByWalletId("WM-RECEIVER")).thenReturn(Optional.empty());
+        when(walletRepository.findByWalletId("SP-SENDER")).thenReturn(Optional.empty());
+        when(walletRepository.findByWalletId("SP-RECEIVER")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getTransactionsByWmUniqueId("WM-SENDER", "WM-RECEIVER"))
+        assertThatThrownBy(() -> service.getTransactionsBySpId("SP-SENDER", "SP-RECEIVER"))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
@@ -132,14 +132,14 @@ class TransactionQueryServiceImplTest {
         Wallet receiverWallet = new Wallet();
         receiverWallet.setPhoneNumber("08010000002");
 
-        when(walletRepository.findByWalletId("WM-SENDER")).thenReturn(Optional.of(senderWallet));
-        when(walletRepository.findByWalletId("WM-RECEIVER")).thenReturn(Optional.of(receiverWallet));
+        when(walletRepository.findByWalletId("SP-SENDER")).thenReturn(Optional.of(senderWallet));
+        when(walletRepository.findByWalletId("SP-RECEIVER")).thenReturn(Optional.of(receiverWallet));
         when(currentUserService.ownsPhoneNumber("08010000001")).thenReturn(false);
         when(currentUserService.ownsPhoneNumber("08010000002")).thenReturn(true);
-        when(transactionRepository.findBySenderWalletIdOrReceiverWalletId("WM-SENDER", "WM-RECEIVER"))
+        when(transactionRepository.findBySenderWalletIdOrReceiverWalletId("SP-SENDER", "SP-RECEIVER"))
                 .thenReturn(List.of());
 
-        assertThat(service.getTransactionsByWmUniqueId("WM-SENDER", "WM-RECEIVER")).isEmpty();
+        assertThat(service.getTransactionsBySpId("SP-SENDER", "SP-RECEIVER")).isEmpty();
     }
 
     @Test
@@ -163,9 +163,9 @@ class TransactionQueryServiceImplTest {
     void saveMirrorBalance_ownedWallet_persistsAndReturnsSuccess() {
         Wallet wallet = new Wallet();
         wallet.setPhoneNumber("08010000001");
-        when(walletRepository.findByWalletId("WM-1")).thenReturn(Optional.of(wallet));
+        when(walletRepository.findByWalletId("SP-1")).thenReturn(Optional.of(wallet));
 
-        BaseResponse response = service.saveMirrorBalance("WM-1", new BigDecimal("750.00"));
+        BaseResponse response = service.saveMirrorBalance("SP-1", new BigDecimal("750.00"));
 
         assertThat(wallet.getMirrorBalance()).isEqualByComparingTo("750.00");
         assertThat(response.getStatusCode()).isEqualTo(200);
@@ -174,9 +174,9 @@ class TransactionQueryServiceImplTest {
 
     @Test
     void saveMirrorBalance_walletNotFound_throwsWalletNotFoundException() {
-        when(walletRepository.findByWalletId("WM-1")).thenReturn(Optional.empty());
+        when(walletRepository.findByWalletId("SP-1")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.saveMirrorBalance("WM-1", new BigDecimal("750.00")))
+        assertThatThrownBy(() -> service.saveMirrorBalance("SP-1", new BigDecimal("750.00")))
                 .isInstanceOf(WalletNotFoundException.class);
     }
 }

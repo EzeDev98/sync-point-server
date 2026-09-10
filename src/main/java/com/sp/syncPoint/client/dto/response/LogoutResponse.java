@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.auth.dto;
+package com.sp.syncPoint.client.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserRegistrationResponse {
-    private String username;
-    private int statusCode;
+public class LogoutResponse {
     private String message;
+    private int statusCode;
 }

@@ -1,4 +1,4 @@
-package com.sp.syncPoint.feature.auth.dto;
+package com.sp.syncPoint.feature.auth.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

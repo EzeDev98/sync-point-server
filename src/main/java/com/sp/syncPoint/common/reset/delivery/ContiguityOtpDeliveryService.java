@@ -47,21 +47,21 @@ public class ContiguityOtpDeliveryService implements OtpDeliveryService {
     @Value("${contiguity.api-key:}")
     private String apiKey;
 
-    @Value("${contiguity.base-url:https://api.contiguity.com}")
+    @Value("${contiguity.base-url:}")
     private String baseUrl;
 
-    @Value("${contiguity.sender-app-name:SyncPoint}")
+    @Value("${contiguity.sender-app-name:}")
     private String appName;
 
     @Override
-    public void sendPasswordResetOtp(String phoneNumber, String otp) {
+    public void sendResetOtp(String phoneNumber, String otp) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("Contiguity is selected as the OTP provider but contiguity.api-key is not configured.");
             return;
         }
 
         String recipient = toE164(phoneNumber);
-        String message = appName + ": Your password reset code is " + otp + ". It expires shortly. " + "Do not share this code with anyone.";
+        String message = appName + ": Your reset code is " + otp + ". It expires shortly. " + "Do not share this code with anyone.";
 
         try {
             String requestBody = objectMapper.writeValueAsString(Map.of(
@@ -80,12 +80,12 @@ public class ContiguityOtpDeliveryService implements OtpDeliveryService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                log.info("Password reset OTP sent via Contiguity for a registered phone number");
+                log.info("Reset OTP sent via Contiguity for a registered phone number");
             } else {
                 log.error("Contiguity OTP send failed with status {}: {}", response.statusCode(), safeErrorSummary(response.body()));
             }
         } catch (Exception ex) {
-            log.error("Failed to send password reset OTP via Contiguity", ex);
+            log.error("Failed to send reset OTP via Contiguity", ex);
         }
     }
 

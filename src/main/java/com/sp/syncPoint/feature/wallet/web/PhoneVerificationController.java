@@ -1,6 +1,5 @@
 package com.sp.syncPoint.feature.wallet.web;
 
-
 import com.sp.syncPoint.client.dto.response.ActivationResponse;
 import com.sp.syncPoint.feature.wallet.dto.request.ResendPhoneVerificationRequest;
 import com.sp.syncPoint.feature.wallet.dto.request.VerifyPhoneRequest;
@@ -13,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("${app.title}/phone")
-@Tag(name = "Phone Verification API", description = "Resource for phone number verifications")
+@RequestMapping("${app.title}/phone-number")
+@Tag(name = "Registration Verification API", description = "Resource for registration verifications using phone number")
 public class PhoneVerificationController {
 
     private final PhoneVerificationService phoneVerificationService;

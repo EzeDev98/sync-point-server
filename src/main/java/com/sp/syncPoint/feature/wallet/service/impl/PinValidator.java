@@ -5,6 +5,7 @@ import com.sp.syncPoint.common.exception.InvalidPinException;
 import com.sp.syncPoint.common.response.BaseResponse;
 import com.sp.syncPoint.feature.wallet.dto.request.SetPinRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -23,10 +24,9 @@ import java.util.Set;
  * pass, so all PIN-input validation now lives in one place. No rule
  * changed during either move.
  */
+@Slf4j
 @Component
 public class PinValidator {
-
-    private static final Logger log = LoggerFactory.getLogger(PinValidator.class);
 
     public void setPinValidation(SetPinRequest request) {
         if (request.getPhoneNumber() == null) {

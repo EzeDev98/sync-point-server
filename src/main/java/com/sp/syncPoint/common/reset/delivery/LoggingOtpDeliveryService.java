@@ -1,5 +1,6 @@
 package com.sp.syncPoint.common.reset.delivery;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,16 +22,15 @@ import org.springframework.stereotype.Service;
  * PasswordResetServiceImpl requires no changes either way.
  */
 @Service
+@Slf4j
 @ConditionalOnProperty(prefix = "app.otp", name = "provider", havingValue = "logging", matchIfMissing = true)
 public class LoggingOtpDeliveryService implements OtpDeliveryService {
-
-    private static final Logger log = LoggerFactory.getLogger(LoggingOtpDeliveryService.class);
 
     @Value("${app.otp.log-to-console:false}")
     private boolean logToConsole;
 
     @Override
-    public void sendPasswordResetOtp(String phoneNumber, String otp) {
+    public void sendResetOtp(String phoneNumber, String otp) {
         // Never log the raw OTP unless explicitly enabled for local development.
         if (logToConsole) {
             log.info("[DEV ONLY] Password reset OTP for {}: {}", phoneNumber, otp);

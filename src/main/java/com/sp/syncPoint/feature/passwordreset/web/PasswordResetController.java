@@ -1,10 +1,10 @@
 package com.sp.syncPoint.feature.passwordreset.web;
 
-import com.sp.syncPoint.feature.passwordreset.dto.CompletePasswordResetRequest;
-import com.sp.syncPoint.feature.passwordreset.dto.PasswordResetRequestDto;
-import com.sp.syncPoint.common.reset.dto.VerifyOtpRequest;
-import com.sp.syncPoint.feature.passwordreset.dto.PasswordResetResponse;
-import com.sp.syncPoint.common.reset.dto.VerifyOtpResponse;
+import com.sp.syncPoint.client.dto.request.CompletePasswordResetRequest;
+import com.sp.syncPoint.client.dto.request.PasswordResetRequest;
+import com.sp.syncPoint.client.dto.request.VerifyOtpRequest;
+import com.sp.syncPoint.client.dto.response.PasswordResetResponse;
+import com.sp.syncPoint.client.dto.response.VerifyOtpResponse;
 import com.sp.syncPoint.feature.passwordreset.service.PasswordResetService;
 import com.sp.syncPoint.common.util.RateLimiterService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,18 +33,21 @@ public class PasswordResetController {
     }
 
     @PostMapping("/request")
-    public ResponseEntity<PasswordResetResponse> requestOtp(@RequestBody PasswordResetRequestDto request) {
+    public ResponseEntity<PasswordResetResponse> requestOtp(@RequestBody PasswordResetRequest request) {
         rateLimiterService.checkRateLimit("ratelimit:password-reset-otp:phone:" + request.getPhoneNumber(), MAX_RESET_PASSWORD_REQUEST, Duration.ofHours(RESET_PASSWORD_RATE_LIMIT_DURATION));
-        return ResponseEntity.ok(passwordResetService.requestOtp(request));
+        PasswordResetResponse passwordResetResponse = passwordResetService.requestOtp(request);
+        return ResponseEntity.ok(passwordResetResponse);
     }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<VerifyOtpResponse> verifyOtp(@RequestBody VerifyOtpRequest request) {
-        return ResponseEntity.ok(passwordResetService.verifyOtp(request));
+        VerifyOtpResponse verifyOtpResponse = passwordResetService.verifyOtp(request);
+        return ResponseEntity.ok(verifyOtpResponse);
     }
 
     @PostMapping("/complete")
     public ResponseEntity<PasswordResetResponse> completeReset(@RequestBody CompletePasswordResetRequest request) {
-        return ResponseEntity.ok(passwordResetService.completeReset(request));
+        PasswordResetResponse passwordResetResponse = passwordResetService.completeReset(request);
+        return ResponseEntity.ok(passwordResetResponse);
     }
 }
