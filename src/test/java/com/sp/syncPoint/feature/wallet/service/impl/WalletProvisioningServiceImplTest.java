@@ -21,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import static com.sp.syncPoint.common.constants.GeneralConstants.SYSTEM_WALLET_ID;
+import static com.sp.syncPoint.common.constants.GeneralConstants.SYSTEM_WALLET_ADMIN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,13 +110,13 @@ class WalletProvisioningServiceImplTest {
 
         assertThatThrownBy(() -> service.setupWallet(user))
                 .isInstanceOf(AlreadyExistException.class);
-        verify(systemWalletRepo, never()).findByIdForUpdate(any());
+        verify(systemWalletRepo, never()).findByNameForUpdate(any());
     }
 
     @Test
     void setupWallet_systemWalletNotFound_throwsWalletNotFoundException() {
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.empty());
-        when(systemWalletRepo.findByIdForUpdate(SYSTEM_WALLET_ID)).thenReturn(Optional.empty());
+        when(systemWalletRepo.findByNameForUpdate(SYSTEM_WALLET_ADMIN)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.setupWallet(user))
                 .isInstanceOf(WalletNotFoundException.class);
@@ -126,7 +126,7 @@ class WalletProvisioningServiceImplTest {
     void setupWallet_systemWalletInsufficientBalance_throwsSystemWalletInsufficientBalanceException() {
         systemWallet.setAvailableBalance(new BigDecimal("100.00"));
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.empty());
-        when(systemWalletRepo.findByIdForUpdate(SYSTEM_WALLET_ID)).thenReturn(Optional.of(systemWallet));
+        when(systemWalletRepo.findByNameForUpdate(SYSTEM_WALLET_ADMIN)).thenReturn(Optional.of(systemWallet));
 
         assertThatThrownBy(() -> service.setupWallet(user))
                 .isInstanceOf(SystemWalletInsufficientBalanceException.class);
@@ -136,7 +136,7 @@ class WalletProvisioningServiceImplTest {
     @Test
     void setupWallet_happyPath_debitsSystemWalletAndCreatesFundedWallet() {
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.empty());
-        when(systemWalletRepo.findByIdForUpdate(SYSTEM_WALLET_ID)).thenReturn(Optional.of(systemWallet));
+        when(systemWalletRepo.findByNameForUpdate(SYSTEM_WALLET_ADMIN)).thenReturn(Optional.of(systemWallet));
         when(uniqueValueService.generateWalletId()).thenReturn("WM-NEW");
         when(transactionUtils.createTransaction(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new Transaction());

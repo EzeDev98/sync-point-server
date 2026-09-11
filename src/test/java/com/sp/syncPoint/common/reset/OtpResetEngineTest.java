@@ -6,8 +6,8 @@ import com.sp.syncPoint.common.exception.OtpExpiredException;
 import com.sp.syncPoint.common.exception.OtpInvalidException;
 import com.sp.syncPoint.common.exception.OtpResendCooldownException;
 import com.sp.syncPoint.common.exception.ResetTokenInvalidException;
-import com.sp.syncPoint.feature.passwordreset.model.PasswordResetOtp;
-import com.sp.syncPoint.feature.passwordreset.model.PasswordResetToken;
+import com.sp.syncPoint.feature.pinreset.model.PinResetOtp;
+import com.sp.syncPoint.feature.pinreset.model.PinResetToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,11 +41,8 @@ class OtpResetEngineTest {
         engine = new OtpResetEngine(otpService);
     }
 
-    // Used as both the "OTP" and "save target" in verify()/invalidateExisting()
-    // tests — PasswordResetOtp is a real ResettableOtp implementation, so this
-    // exercises the actual interface wiring rather than a hand-rolled fake.
-    private PasswordResetOtp otp(int attemptCount, int maxAttempts, LocalDateTime expiresAt) {
-        PasswordResetOtp otp = new PasswordResetOtp();
+    private PinResetOtp otp(int attemptCount, int maxAttempts, LocalDateTime expiresAt) {
+        PinResetOtp otp = new PinResetOtp();
         otp.setOtpHash("hashed-otp");
         otp.setAttemptCount(attemptCount);
         otp.setMaxAttempts(maxAttempts);
@@ -53,8 +50,6 @@ class OtpResetEngineTest {
         otp.setStatus(PasswordResetStatus.ACTIVE);
         return otp;
     }
-
-    // ── cooldown ───────────────────────────────────────────────────
 
     @Test
     void rejectIfCoolingDown_bucketExists_throwsWithRemainingSeconds() {
@@ -89,18 +84,18 @@ class OtpResetEngineTest {
     @Test
     void invalidateExisting_noPriorOtp_doesNotInvokeSave() {
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
 
-        engine.invalidateExisting(Optional.<PasswordResetOtp>empty(), save);
+        engine.invalidateExisting(Optional.<PinResetOtp>empty(), save);
 
         verify(save, never()).accept(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
     void invalidateExisting_priorOtp_marksInvalidatedAndSaves() {
-        PasswordResetOtp existing = otp(0, 5, LocalDateTime.now().plusMinutes(5));
+        PinResetOtp existing = otp(0, 5, LocalDateTime.now().plusMinutes(5));
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
 
         engine.invalidateExisting(Optional.of(existing), save);
 
@@ -113,7 +108,7 @@ class OtpResetEngineTest {
 
     @Test
     void populateNewOtp_setsAllSharedFields() {
-        PasswordResetOtp otp = new PasswordResetOtp();
+        PinResetOtp otp = new PinResetOtp();
         when(otpService.hashOtp("123456")).thenReturn("hashed-123456");
 
         engine.populateNewOtp(otp, "08010000001", "123456", 10, 3);
@@ -131,9 +126,9 @@ class OtpResetEngineTest {
 
     @Test
     void verify_expiredOtp_marksExpiredSavesAndThrows() {
-        PasswordResetOtp otp = otp(0, 3, LocalDateTime.now().minusMinutes(1));
+        PinResetOtp otp = otp(0, 3, LocalDateTime.now().minusMinutes(1));
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
 
         assertThatThrownBy(() -> engine.verify(otp, "123456", save))
                 .isInstanceOf(OtpExpiredException.class);
@@ -144,9 +139,9 @@ class OtpResetEngineTest {
 
     @Test
     void verify_attemptsAlreadyExhausted_marksInvalidatedSavesAndThrows() {
-        PasswordResetOtp otp = otp(3, 3, LocalDateTime.now().plusMinutes(5));
+        PinResetOtp otp = otp(3, 3, LocalDateTime.now().plusMinutes(5));
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
 
         assertThatThrownBy(() -> engine.verify(otp, "123456", save))
                 .isInstanceOf(MaxAttemptsExceededException.class);
@@ -157,9 +152,9 @@ class OtpResetEngineTest {
 
     @Test
     void verify_wrongCode_incrementsAttemptsSavesAndThrowsInvalid() {
-        PasswordResetOtp otp = otp(0, 3, LocalDateTime.now().plusMinutes(5));
+        PinResetOtp otp = otp(0, 3, LocalDateTime.now().plusMinutes(5));
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
         when(otpService.matchesOtp("000000", "hashed-otp")).thenReturn(false);
 
         assertThatThrownBy(() -> engine.verify(otp, "000000", save))
@@ -172,9 +167,9 @@ class OtpResetEngineTest {
 
     @Test
     void verify_wrongCodeExhaustsAttempts_invalidatesAndThrowsMaxAttempts() {
-        PasswordResetOtp otp = otp(2, 3, LocalDateTime.now().plusMinutes(5)); // one more failure exhausts
+        PinResetOtp otp = otp(2, 3, LocalDateTime.now().plusMinutes(5)); // one more failure exhausts
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
         when(otpService.matchesOtp("000000", "hashed-otp")).thenReturn(false);
 
         assertThatThrownBy(() -> engine.verify(otp, "000000", save))
@@ -187,9 +182,9 @@ class OtpResetEngineTest {
 
     @Test
     void verify_correctCode_marksVerifiedAndSaves() {
-        PasswordResetOtp otp = otp(0, 3, LocalDateTime.now().plusMinutes(5));
+        PinResetOtp otp = otp(0, 3, LocalDateTime.now().plusMinutes(5));
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetOtp> save = mock(Consumer.class);
+        Consumer<PinResetOtp> save = mock(Consumer.class);
         when(otpService.matchesOtp("123456", "hashed-otp")).thenReturn(true);
 
         engine.verify(otp, "123456", save);
@@ -203,7 +198,7 @@ class OtpResetEngineTest {
 
     @Test
     void assertUsable_usedToken_throwsWithGivenMessage() {
-        PasswordResetToken token = new PasswordResetToken();
+        PinResetToken token = new PinResetToken();
         token.setUsed(true);
         token.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
@@ -214,7 +209,7 @@ class OtpResetEngineTest {
 
     @Test
     void assertUsable_expiredToken_throws() {
-        PasswordResetToken token = new PasswordResetToken();
+        PinResetToken token = new PinResetToken();
         token.setUsed(false);
         token.setExpiresAt(LocalDateTime.now().minusMinutes(1));
 
@@ -224,7 +219,7 @@ class OtpResetEngineTest {
 
     @Test
     void assertUsable_validToken_doesNotThrow() {
-        PasswordResetToken token = new PasswordResetToken();
+        PinResetToken token = new PinResetToken();
         token.setUsed(false);
         token.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
@@ -234,9 +229,9 @@ class OtpResetEngineTest {
 
     @Test
     void markUsed_setsUsedFlagTimestampAndSaves() {
-        PasswordResetToken token = new PasswordResetToken();
+        PinResetToken token = new PinResetToken();
         @SuppressWarnings("unchecked")
-        Consumer<PasswordResetToken> save = mock(Consumer.class);
+        Consumer<PinResetToken> save = mock(Consumer.class);
 
         engine.markUsed(token, save);
 
