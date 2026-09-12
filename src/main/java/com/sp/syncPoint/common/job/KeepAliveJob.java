@@ -44,7 +44,7 @@ public class KeepAliveJob {
             .connectTimeout(Duration.ofSeconds(5))
             .build();
 
-    @Value("${base-url}")
+    @Value("${base-url:http://localhost:2000}")
     private String baseUrl;
 
     @Value("${app.title}")

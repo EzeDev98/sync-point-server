@@ -2,6 +2,7 @@ com/sp/syncPoint/common/reset/OtpService.class
 com/sp/syncPoint/common/reset/dto/VerifyOtpRequest.class
 com/sp/syncPoint/common/exception/OtpResendCooldownException.class
 com/sp/syncPoint/common/exception/UserAlreadyExistsException.class
+com/sp/syncPoint/common/job/KeepAliveJob.class
 com/sp/syncPoint/feature/wallet/service/impl/SystemWalletInitializer.class
 com/sp/syncPoint/common/exception/ResourceNotFoundException.class
 com/sp/syncPoint/config/RedissonConfig.class
@@ -15,6 +16,7 @@ com/sp/syncPoint/feature/passwordreset/service/impl/PasswordResetServiceImpl.cla
 com/sp/syncPoint/common/reset/OtpResetEngine.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletLockoutService.class
 com/sp/syncPoint/common/support/EntityUtilityService.class
+com/sp/syncPoint/client/dto/request/TenantWipeRequest.class
 com/sp/syncPoint/feature/user/enums/UserStatus.class
 com/sp/syncPoint/SyncPointApplication.class
 com/sp/syncPoint/feature/auth/service/AuthService.class
@@ -60,6 +62,7 @@ com/sp/syncPoint/feature/pinreset/dto/PinResetRequestDto.class
 com/sp/syncPoint/feature/pinreset/constants/PinToken.class
 com/sp/syncPoint/common/exception/TransactionsNotFoundException.class
 com/sp/syncPoint/feature/pinreset/service/impl/PinResetServiceImpl.class
+com/sp/syncPoint/common/web/KeepAliveController.class
 com/sp/syncPoint/common/reset/delivery/ContiguityOtpDeliveryService.class
 com/sp/syncPoint/feature/auth/web/AuthController.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletFundingServiceImpl.class
@@ -88,7 +91,9 @@ com/sp/syncPoint/feature/session/dto/InvalidatedSessionResponse.class
 com/sp/syncPoint/common/exception/IncorrectPinException.class
 com/sp/syncPoint/common/exception/OtpExpiredException.class
 com/sp/syncPoint/feature/wallet/model/SystemWallet.class
+com/sp/syncPoint/client/dto/response/TenantWipeResponse.class
 com/sp/syncPoint/feature/auth/service/impl/RegistrationValidator.class
+com/sp/syncPoint/client/service/InternalAuthClient$11.class
 com/sp/syncPoint/common/exception/InvalidTransactionLimitException.class
 com/sp/syncPoint/common/exception/RegistrationException.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletFactory.class
@@ -119,6 +124,7 @@ com/sp/syncPoint/feature/user/model/User.class
 com/sp/syncPoint/common/exception/PinChangeLockedException.class
 com/sp/syncPoint/common/exception/InvalidPinException.class
 com/sp/syncPoint/feature/session/service/LogoutService.class
+com/sp/syncPoint/feature/admin/service/DatabaseResetService.class
 com/sp/syncPoint/feature/passwordreset/constants/PasswordToken.class
 com/sp/syncPoint/common/security/RolesEvaluator.class
 com/sp/syncPoint/common/exception/AuthenticationException.class
@@ -135,6 +141,7 @@ com/sp/syncPoint/feature/passwordreset/enums/PasswordResetStatus.class
 com/sp/syncPoint/common/exception/UnauthorizedException.class
 com/sp/syncPoint/feature/transaction/model/Transaction.class
 com/sp/syncPoint/feature/transaction/service/TransactionSyncService.class
+com/sp/syncPoint/feature/admin/service/DatabaseResetService$ResetResult.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletSigningKeyServiceImpl.class
 com/sp/syncPoint/feature/transaction/enums/Outcome.class
 com/sp/syncPoint/common/reset/delivery/LoggingOtpDeliveryService.class
@@ -153,4 +160,5 @@ com/sp/syncPoint/common/exception/CustomApiException.class
 com/sp/syncPoint/feature/session/service/impl/LogoutServiceImpl.class
 com/sp/syncPoint/feature/user/enums/GenderStatus.class
 com/sp/syncPoint/feature/pinreset/repository/PinResetOtpRepository.class
+com/sp/syncPoint/feature/admin/web/AdminResetController.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletPinServiceImpl.class

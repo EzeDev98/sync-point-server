@@ -4,6 +4,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/request/PasswordResetRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/request/RefreshTokenRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/request/RegisterRequest.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/request/TenantWipeRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/request/VerifyOtpRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/ActivationResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/InternalAuthApiResponse.java
@@ -12,6 +13,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/LogoutResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/PasswordResetResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/RegisterResponse.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/TenantWipeResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/VerifyOtpResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/service/InternalAuthClient.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/constants/GeneralConstants.java
@@ -58,6 +60,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/UserNotFoundException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/WalletLockedException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/WalletNotFoundException.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/job/KeepAliveJob.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/money/MoneyConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/money/MoneyUtils.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/reset/OtpResetEngine.java
@@ -76,7 +79,6 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/CustomAccessDenied.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/CustomAuthenticationEntryPoint.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/InternalAuthJwtRolesConverter.java
-/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/KeycloakConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/RolesEvaluator.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/TransferSignatureVerifier.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/security/WebSecurityConfig.java
@@ -84,6 +86,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/support/EntityUtilityServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/util/RateLimiterService.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/util/UniqueValueGeneratorService.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/web/KeepAliveController.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/config/AppConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/config/RedissonConfig.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/config/SwaggerCustomConfig.java
