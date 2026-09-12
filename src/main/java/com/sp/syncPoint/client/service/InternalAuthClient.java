@@ -16,14 +16,21 @@ public class InternalAuthClient {
 
     private final RestClient restClient;
     private final String basicAuthHeader;
+    private final String clientId;
+    private final String resetSecret;
+
+    private static final String WIPE_CONFIRMATION = "WIPE-EVERYTHING";
 
     public InternalAuthClient(
             @Value("${internal-auth.base-url}") String baseUrl,
             @Value("${internal-auth.client-id}") String clientId,
-            @Value("${internal-auth.client-secret}") String clientSecret) {
+            @Value("${internal-auth.client-secret}") String clientSecret,
+            @Value("${internal-auth.reset.secret:}") String resetSecret) {
         this.restClient = RestClient.builder().baseUrl(baseUrl).build();
         this.basicAuthHeader = "Basic " + Base64.getEncoder()
                 .encodeToString((clientId + ":" + clientSecret).getBytes());
+        this.clientId = clientId;
+        this.resetSecret = resetSecret;
     }
 
     public InternalAuthApiResponse<RegisterResponse> register(RegisterRequest request) {
@@ -116,5 +123,25 @@ public class InternalAuthClient {
                         .build())
                 .retrieve()
                 .body(new ParameterizedTypeReference<InternalAuthApiResponse<Void>>() {});
+    }
+
+    /**
+     * Calls down into internal-auth-server's own tenant wipe endpoint so
+     * SyncPoint's {@code /admin/reset/wipe} can clear its own database and
+     * every internal-auth-server record scoped to this client application
+     * together. Uses the dedicated internal-auth.reset.secret
+     * (X-Reset-Secret header), NOT the client-id/secret Basic-auth header
+     * every other method here uses - that Basic auth authenticates "which
+     * app is calling", this secret separately authorizes "this call may
+     * wipe data". appId is always this app's own clientId, so this can
+     * never be pointed at another tenant's data.
+     */
+    public InternalAuthApiResponse<TenantWipeResponse> wipeTenantData() {
+        return restClient.post()
+                .uri("/admin/reset/wipe-tenant")
+                .header("X-Reset-Secret", resetSecret)
+                .body(new TenantWipeRequest(clientId, WIPE_CONFIRMATION))
+                .retrieve()
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<TenantWipeResponse>>() {});
     }
 }
