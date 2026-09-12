@@ -50,6 +50,7 @@ public class GlobalExceptionHandler {
      * shape to everything in this registry.
      */
     private static final Map<Class<? extends RuntimeException>, HttpStatus> SIMPLE_STATUS_MAPPINGS = Map.ofEntries(
+            Map.entry(AccountNotVerifiedException.class, HttpStatus.FORBIDDEN),
             Map.entry(IncorrectPinException.class, HttpStatus.UNAUTHORIZED),
             Map.entry(InsufficientFundsException.class, HttpStatus.PAYMENT_REQUIRED),
             Map.entry(InvalidTransactionRequestException.class, HttpStatus.BAD_REQUEST),
@@ -102,6 +103,11 @@ public class GlobalExceptionHandler {
             return buildUnexpectedErrorResponse(ex);
         }
         return ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+    }
+
+    @ExceptionHandler(InternalAuthCallException.class)
+    public ProblemDetail handleInternalAuthCallException(InternalAuthCallException ex) {
+        return ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateTransactionCheckException.class)

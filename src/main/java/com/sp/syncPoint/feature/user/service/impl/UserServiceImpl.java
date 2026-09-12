@@ -82,11 +82,11 @@ public class UserServiceImpl implements UserService {
         RegisterResponse response = registerResponse.getData();
 
         try {
-            User user = createUser(request, response.getUserId());
+            User user = createUser(request, response.getInternalAuthUserId());
             walletService.setupWallet(user);
             return new UserRegistrationResponse(user.getUsername(), HttpServletResponse.SC_CREATED, "User registered successfully. Check your Mailbox or SMS for the verification code.");
         } catch (InternalAuthRegistrationFailedException ex) {
-            authClient.deleteUser(response.getUserId());
+            authClient.deleteUser(response.getInternalAuthUserId());
             throw new RegistrationException("Registration failed, all changes have been rolled back: " + ex.getMessage());
         }
     }

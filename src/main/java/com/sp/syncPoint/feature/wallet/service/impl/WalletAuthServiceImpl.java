@@ -1,9 +1,11 @@
 package com.sp.syncPoint.feature.wallet.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sp.syncPoint.client.dto.request.LoginRequest;
 import com.sp.syncPoint.client.dto.response.InternalAuthApiResponse;
 import com.sp.syncPoint.client.dto.response.InternalAuthLoginResponse;
 import com.sp.syncPoint.client.service.InternalAuthClient;
+import com.sp.syncPoint.common.exception.AccountNotVerifiedException;
 import com.sp.syncPoint.common.exception.ActiveSessionExistsException;
 import com.sp.syncPoint.common.exception.BadRequestException;
 import com.sp.syncPoint.common.exception.UnauthorizedException;
@@ -54,6 +56,7 @@ public class WalletAuthServiceImpl implements WalletAuthService {
     private final EntityUtilityService entityUtilityService;
     private final WalletLockoutService walletLockoutService;
     private final InternalAuthClient authClient;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -88,6 +91,18 @@ public class WalletAuthServiceImpl implements WalletAuthService {
            authApiResponse = authClient.login(new LoginRequest(user.getUsername(), request.getPassword()));
         } catch (RestClientResponseException ex) {
 
+            // internal-auth-server rejects an unverified account's login with a
+            // 403 (AccountNotVerifiedException there) even when the password is
+            // correct. That must not be treated as a failed-password attempt —
+            // it shouldn't count toward the lockout, and the caller needs to be
+            // able to tell it apart from "wrong password" so the client can
+            // route the user to verification instead of showing a generic
+            // sign-in error.
+            if (ex.getStatusCode().value() == 403) {
+                log.warn("Login blocked for phone: {} — account not verified", request.getPhoneNumber());
+                throw new AccountNotVerifiedException(extractAuthErrorMessage(ex));
+            }
+
             int attempts = walletLockoutService.recordFailedLoginAttempt(request.getPhoneNumber());
 
             log.warn("Invalid login attempt for phone: {}. Attempt {} of {}", request.getPhoneNumber(), attempts, MAX_LOGIN_ATTEMPTS);
@@ -117,5 +132,23 @@ public class WalletAuthServiceImpl implements WalletAuthService {
     @Override
     public boolean doesAccountExist(String phoneNumber) {
         return entityUtilityService.existByPhoneNumber(phoneNumber);
+    }
+
+    /**
+     * Extracts internal-auth-server's own error message from a failed-login
+     * response, mirroring {@code PhoneVerificationServiceImpl#translateAuthError}.
+     * Falls back to a generic message if the body isn't the expected shape.
+     */
+    private String extractAuthErrorMessage(RestClientResponseException ex) {
+        try {
+            InternalAuthApiResponse<?> body = objectMapper.readValue(
+                    ex.getResponseBodyAsString(), InternalAuthApiResponse.class);
+            if (body.getMessage() != null) {
+                return body.getMessage();
+            }
+        } catch (Exception parseFailure) {
+            // internal-auth's response wasn't parseable — fall back below.
+        }
+        return "Your account is not verified yet. Please complete verification to continue.";
     }
 }

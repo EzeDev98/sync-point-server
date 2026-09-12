@@ -52,9 +52,9 @@ public class WebSecurityConfig {
 
                         .requestMatchers(HttpMethod.POST,"/api/v1/register-user").permitAll()
 
-                        .requestMatchers(HttpMethod.POST,"/api/v1/phone/verify").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/v1/phone-number/verify").permitAll()
 
-                        .requestMatchers(HttpMethod.POST,"/api/v1/phone/resend-verification").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/v1/phone-number/resend-verification").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/v1/wallet/login").permitAll()
 
