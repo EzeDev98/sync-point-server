@@ -17,6 +17,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/VerifyOtpResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/service/InternalAuthClient.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/constants/GeneralConstants.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/AccountNotVerifiedException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/ActiveSessionExistsException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/AlreadyExistException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/AuthenticationException.java
@@ -30,6 +31,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/IncorrectPinException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/InsufficientBalanceException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/InsufficientFundsException.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/InternalAuthCallException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/InternalAuthRegistrationFailedException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/InternalServerErrorException.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/common/exception/InvalidInputException.java

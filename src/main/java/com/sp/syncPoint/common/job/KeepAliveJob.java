@@ -1,7 +1,10 @@
 package com.sp.syncPoint.common.job;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +53,9 @@ public class KeepAliveJob {
     @Value("${app.title}")
     private String apiTitle;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     /**
      * fixedRate, not fixedDelay: this should fire every 3 minutes on the
      * clock regardless of how long the previous ping took, not 3 minutes
@@ -77,6 +83,35 @@ public class KeepAliveJob {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Self-ping to {} interrupted", uri);
+        }
+    }
+
+    /**
+     * Neon's free-tier compute auto-suspends after 5 minutes with no
+     * queries - Postgres, not Render, and a completely separate resource
+     * from the HTTP ping above (which only keeps the Render web service
+     * itself warm). A suspended compute's first query after suspension
+     * pays a resume delay - usually a couple seconds, but enough on a bad
+     * day to tip over Hikari's connection-timeout and surface as the
+     * DataAccessException -> 503 "temporarily unavailable" response (see
+     * GlobalExceptionHandler#handleDataAccessException). SELECT 1 is the
+     * cheapest query that still counts as real activity to Neon, run on
+     * the same 3-minute cadence as the HTTP ping so the compute never
+     * sits idle long enough to suspend.
+     *
+     * <p>This burns real Neon compute-hours continuously instead of only
+     * during actual use - acceptable on a project dedicated to active
+     * testing, but worth knowing: Neon's free-tier compute-hour quota is
+     * per-project, not pooled across an account, so this only eats into
+     * THIS project's own monthly allowance, not any other app's.
+     */
+    @Scheduled(fixedRate = 180_000)
+    public void pingDatabase() {
+        try {
+            jdbcTemplate.execute("SELECT 1");
+            log.debug("Database keep-alive query succeeded");
+        } catch (DataAccessException e) {
+            log.warn("Database keep-alive query failed", e);
         }
     }
 }

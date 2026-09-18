@@ -4,6 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -134,6 +135,25 @@ public class GlobalExceptionHandler {
         log.error("System wallet insufficient balance: {}", ex.getMessage());
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
                 "This operation is temporarily unavailable. Please try again shortly.");
+        problem.setTitle("Service Temporarily Unavailable");
+        return problem;
+    }
+
+    /**
+     * Catches any DataAccessException that escapes uncaught from anywhere
+     * in the app - connection pool exhaustion, CannotCreateTransactionException
+     * when Postgres itself is unreachable, query timeouts, etc. - including
+     * the exact window KeepAliveJob#pingDatabase exists to shrink. Without
+     * this, that kind of infrastructure failure surfaces as a misleading
+     * 500 ("something is broken in your request") instead of a 503 ("the
+     * service itself is temporarily down"). Same reasoning as
+     * internal-auth-server's identical handler.
+     */
+    @ExceptionHandler(DataAccessException.class)
+    public ProblemDetail handleDataAccessException(DataAccessException ex) {
+        log.error("Database connectivity failure", ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "The service is temporarily unavailable. Please try again shortly.");
         problem.setTitle("Service Temporarily Unavailable");
         return problem;
     }

@@ -11,6 +11,7 @@ com/sp/syncPoint/common/exception/InvalidInputException.class
 com/sp/syncPoint/feature/pinreset/web/PinResetController.class
 com/sp/syncPoint/feature/wallet/service/WalletFundingService.class
 com/sp/syncPoint/feature/transaction/dto/TransactionResponse.class
+com/sp/syncPoint/common/exception/InternalAuthCallException.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletAuthServiceImpl.class
 com/sp/syncPoint/feature/passwordreset/service/impl/PasswordResetServiceImpl.class
 com/sp/syncPoint/common/reset/OtpResetEngine.class
@@ -79,6 +80,7 @@ com/sp/syncPoint/common/exception/PinVerificationException.class
 com/sp/syncPoint/common/exception/UserNotFoundException.class
 com/sp/syncPoint/common/exception/InternalServerErrorException.class
 com/sp/syncPoint/feature/transaction/dto/ProcessingResult.class
+com/sp/syncPoint/common/exception/AccountNotVerifiedException.class
 com/sp/syncPoint/feature/transaction/enums/EntryType.class
 com/sp/syncPoint/feature/transaction/service/impl/IdempotencyValidator.class
 com/sp/syncPoint/common/util/RateLimiterService.class
