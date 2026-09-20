@@ -39,6 +39,7 @@ com/sp/syncPoint/feature/pinreset/dto/CompletePinResetRequest.class
 com/sp/syncPoint/feature/passwordreset/service/PasswordResetService.class
 com/sp/syncPoint/feature/transaction/service/impl/TransactionQueryServiceImpl.class
 com/sp/syncPoint/client/service/InternalAuthClient$12.class
+com/sp/syncPoint/feature/session/dto/SessionInvalidateRequest.class
 com/sp/syncPoint/common/exception/GlobalExceptionHandler.class
 com/sp/syncPoint/common/reset/ResettableOtp.class
 com/sp/syncPoint/feature/wallet/web/WalletController.class
@@ -67,6 +68,7 @@ com/sp/syncPoint/common/web/KeepAliveController.class
 com/sp/syncPoint/common/reset/delivery/ContiguityOtpDeliveryService.class
 com/sp/syncPoint/feature/auth/web/AuthController.class
 com/sp/syncPoint/feature/wallet/service/impl/WalletFundingServiceImpl.class
+com/sp/syncPoint/feature/session/web/AdminSessionController.class
 com/sp/syncPoint/feature/wallet/service/WalletSigningKeyService.class
 com/sp/syncPoint/feature/pinreset/model/PinResetOtp.class
 com/sp/syncPoint/common/reset/ResettableToken.class
@@ -115,6 +117,7 @@ com/sp/syncPoint/feature/admin/security/ResetAuthorizer.class
 com/sp/syncPoint/feature/passwordreset/constants/PasswordOtp.class
 com/sp/syncPoint/feature/passwordreset/config/PasswordResetProperties.class
 com/sp/syncPoint/feature/wallet/repository/WalletFundingRecordRepository.class
+com/sp/syncPoint/feature/session/security/SessionInvalidateAuthorizer.class
 com/sp/syncPoint/feature/user/service/impl/CurrentUserService.class
 com/sp/syncPoint/feature/auth/service/impl/AuthServiceImpl.class
 com/sp/syncPoint/feature/transaction/util/TransactionUtils.class

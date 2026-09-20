@@ -90,6 +90,13 @@ public class WebSecurityConfig {
                         // app.reset.secret is configured. See AdminResetController.
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/reset/wipe").permitAll()
 
+                        // Server-to-server push from internal-auth's "Logout all sessions" console
+                        // action (SyncPointSessionClient). Opened here so it can be called without
+                        // a Keycloak login; it is guarded instead by a required X-Admin-Secret, and
+                        // is inert unless app.session-invalidate.secret is configured. See
+                        // AdminSessionController / SessionInvalidateAuthorizer.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/sessions/invalidate-by-username").permitAll()
+
                         .requestMatchers("/public/**").permitAll()
 
                         .requestMatchers(
