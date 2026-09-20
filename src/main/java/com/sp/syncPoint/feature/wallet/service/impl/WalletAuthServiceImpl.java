@@ -128,6 +128,14 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         // on login" OFF in the internal-auth console, otherwise the login above would already have
         // revoked the first device's refresh token.
         if (activeSessionElsewhere) {
+            // The password was correct, so internal-auth has just issued a token pair for this
+            // refused login. Revoke it: left alone it would make internal-auth report the user as
+            // signed in, and keep blocking every later login, until it expired.
+            try {
+                authClient.logout(loginResponse.getAccessToken());
+            } catch (RuntimeException ex) {
+                log.warn("Could not revoke the token issued for a refused login for phone: {}: {}", request.getPhoneNumber(), ex.getMessage());
+            }
             log.warn("Login blocked for phone: {} — active session exists on another device", request.getPhoneNumber());
             throw new ActiveSessionExistsException("This account is currently active on another device. Please unlock and log out on that device before signing in here.");
         }
