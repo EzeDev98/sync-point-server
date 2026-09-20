@@ -17,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import com.sp.syncPoint.feature.session.repository.UserSessionRepository;
+import com.sp.syncPoint.feature.user.repository.UserRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -37,6 +40,10 @@ public class WebSecurityConfig {
     private final CustomAccessDenied customAccessDenied;
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    private final UserRepository userRepository;
+
+    private final UserSessionRepository userSessionRepository;
 
     @Value("${internal-auth.issuer-url}")
     private String tokenIssuerUrl;
@@ -119,6 +126,7 @@ public class WebSecurityConfig {
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
                         .accessDeniedHandler(customAccessDenied))
                 .csrf(AbstractHttpConfigurer::disable)
+                .addFilterAfter(new ActiveSessionFilter(userRepository, userSessionRepository), BearerTokenAuthenticationFilter.class)
                 .build();
     }
 
