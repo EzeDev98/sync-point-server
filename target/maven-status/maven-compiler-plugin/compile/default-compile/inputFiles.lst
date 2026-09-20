@@ -13,6 +13,7 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/LogoutResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/PasswordResetResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/RegisterResponse.java
+/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/SessionStatusResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/TenantWipeResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/dto/response/VerifyOtpResponse.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/client/service/InternalAuthClient.java
@@ -132,7 +133,6 @@
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/session/service/impl/LogoutServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/session/service/impl/SessionManagementServiceImpl.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/session/web/LogoutControl.java
-/Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/session/web/UserSessionController.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/transaction/dto/ProcessingResult.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/transaction/dto/SyncTransactionRequest.java
 /Users/delsonstech/Desktop/my-projects/sync-point-server/src/main/java/com/sp/syncPoint/feature/transaction/dto/TransactionResponse.java

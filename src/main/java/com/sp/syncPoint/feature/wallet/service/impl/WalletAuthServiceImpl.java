@@ -88,6 +88,10 @@ public class WalletAuthServiceImpl implements WalletAuthService {
             throw new UnauthorizedException("Invalid phone number or password");
         }
 
+        // Worked out before internal-auth is called but only acted on after the password is
+        // verified, so "active on another device" is never shown to someone without it.
+        boolean activeSessionElsewhere = sessionManagementService.hasActiveSession(request.getPhoneNumber());
+
         InternalAuthApiResponse<InternalAuthLoginResponse> authApiResponse;
 
         try {
@@ -123,7 +127,7 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         // who merely knows the phone number. Relies on the sync-point client having "revoke other sessions
         // on login" OFF in the internal-auth console, otherwise the login above would already have
         // revoked the first device's refresh token.
-        if (sessionManagementService.hasActiveSession(request.getPhoneNumber())) {
+        if (activeSessionElsewhere) {
             log.warn("Login blocked for phone: {} — active session exists on another device", request.getPhoneNumber());
             throw new ActiveSessionExistsException("This account is currently active on another device. Please unlock and log out on that device before signing in here.");
         }

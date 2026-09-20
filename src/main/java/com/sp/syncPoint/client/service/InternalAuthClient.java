@@ -200,18 +200,19 @@ public class InternalAuthClient {
     }
 
     /**
-     * Asks internal-auth to revoke every refresh token / authorization the user
-     * holds for this client, so a device that is offline right now cannot
-     * silently refresh its way back in after an admin invalidates the session.
+     * Whether internal-auth still holds a live refresh token for this user. An admin
+     * signing the user out in internal-auth deletes those tokens, which is how SyncPoint
+     * finds out that its own "signed in elsewhere" record is stale.
      */
-    public void revokeUserSessions(String username) {
-        restClient.post()
-                .uri("/auth/revoke-sessions")
+    public boolean isSessionLive(String username) {
+        InternalAuthApiResponse<com.sp.syncPoint.client.dto.response.SessionStatusResponse> response = restClient.post()
+                .uri("/auth/session-status")
                 .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
                 .body(java.util.Map.of("username", username))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::handleDownstreamError)
-                .toBodilessEntity();
+                .body(new ParameterizedTypeReference<InternalAuthApiResponse<com.sp.syncPoint.client.dto.response.SessionStatusResponse>>() {});
+        return response != null && response.getData() != null && response.getData().isActive();
     }
 
     public void deleteUser(String internalAuthUserId) {

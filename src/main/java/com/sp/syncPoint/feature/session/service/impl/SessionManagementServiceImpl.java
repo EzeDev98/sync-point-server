@@ -36,24 +36,6 @@ public class SessionManagementServiceImpl implements SessionManagementService {
 
     @Override
     @Transactional
-    public InvalidatedSessionResponse terminateUserSessionByAdmin(String phoneNumber) {
-        InvalidatedSessionResponse local = invalidateUserSessionByAdmin(phoneNumber);
-        var user = userRepository.findByPhoneNumber(phoneNumber);
-        if (user.isEmpty()) {
-            return local;
-        }
-        // Deliberately not caught: on failure the local close rolls back too.
-        authClient.revokeUserSessions(user.get().getUsername());
-        if (local.getStatus() == HttpServletResponse.SC_NOT_FOUND) {
-            return new InvalidatedSessionResponse(HttpServletResponse.SC_OK,
-                    "No active session was tracked for " + phoneNumber
-                            + ", but any refresh tokens the user held were revoked.");
-        }
-        return local;
-    }
-
-    @Override
-    @Transactional
     public void createSession(Long userId, String phoneNumber, String token) {
         userSessionRepository.findByPhoneNumberAndIsActiveTrue(phoneNumber)
                 .ifPresent(existing -> closeSession(existing, REPLACED_BY_NEW_LOGIN));
@@ -123,8 +105,33 @@ public class SessionManagementServiceImpl implements SessionManagementService {
                         closeSession(session, TTL_EXPIRED);
                         return false;
                     }
+                    if (!isStillLiveInInternalAuth(phoneNumber)) {
+                        log.info("Session for {} was ended in internal-auth — releasing the local record", phoneNumber);
+                        closeSession(session, ADMIN_ACTION);
+                        return false;
+                    }
                     return true;
                 }).orElse(false);
+    }
+
+    /**
+     * An admin signing the user out in internal-auth deletes their refresh tokens there, but
+     * cannot reach this table. So before a stored session blocks a login, ask internal-auth
+     * whether the user still holds a live token. If it cannot be confirmed either way
+     * (unknown user, internal-auth unreachable) the session is kept, preserving the
+     * one-session-per-user guarantee.
+     */
+    private boolean isStillLiveInInternalAuth(String phoneNumber) {
+        var user = userRepository.findByPhoneNumber(phoneNumber);
+        if (user.isEmpty()) {
+            return true;
+        }
+        try {
+            return authClient.isSessionLive(user.get().getUsername());
+        } catch (RuntimeException ex) {
+            log.warn("Could not confirm session status with internal-auth for {}: {}", phoneNumber, ex.getMessage());
+            return true;
+        }
     }
 
     private void closeSession(UserSession session, String reason) {
