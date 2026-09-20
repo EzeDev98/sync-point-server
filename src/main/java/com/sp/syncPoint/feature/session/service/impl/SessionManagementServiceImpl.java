@@ -1,6 +1,8 @@
 package com.sp.syncPoint.feature.session.service.impl;
 
+import com.sp.syncPoint.client.service.InternalAuthClient;
 import com.sp.syncPoint.feature.session.model.UserSession;
+import com.sp.syncPoint.feature.user.repository.UserRepository;
 import com.sp.syncPoint.feature.session.repository.UserSessionRepository;
 import com.sp.syncPoint.feature.session.dto.InvalidatedSessionResponse;
 import com.sp.syncPoint.feature.session.service.SessionManagementService;
@@ -21,8 +23,33 @@ public class SessionManagementServiceImpl implements SessionManagementService {
 
     private final UserSessionRepository userSessionRepository;
 
-    public SessionManagementServiceImpl(UserSessionRepository userSessionRepository) {
+    private final UserRepository userRepository;
+    private final InternalAuthClient authClient;
+
+    public SessionManagementServiceImpl(UserSessionRepository userSessionRepository,
+                                        UserRepository userRepository,
+                                        InternalAuthClient authClient) {
         this.userSessionRepository = userSessionRepository;
+        this.userRepository = userRepository;
+        this.authClient = authClient;
+    }
+
+    @Override
+    @Transactional
+    public InvalidatedSessionResponse terminateUserSessionByAdmin(String phoneNumber) {
+        InvalidatedSessionResponse local = invalidateUserSessionByAdmin(phoneNumber);
+        var user = userRepository.findByPhoneNumber(phoneNumber);
+        if (user.isEmpty()) {
+            return local;
+        }
+        // Deliberately not caught: on failure the local close rolls back too.
+        authClient.revokeUserSessions(user.get().getUsername());
+        if (local.getStatus() == HttpServletResponse.SC_NOT_FOUND) {
+            return new InvalidatedSessionResponse(HttpServletResponse.SC_OK,
+                    "No active session was tracked for " + phoneNumber
+                            + ", but any refresh tokens the user held were revoked.");
+        }
+        return local;
     }
 
     @Override

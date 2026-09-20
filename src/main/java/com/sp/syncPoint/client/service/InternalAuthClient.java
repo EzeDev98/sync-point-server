@@ -199,6 +199,21 @@ public class InternalAuthClient {
                 .body(new ParameterizedTypeReference<InternalAuthApiResponse<LogoutResponse>>() {});
     }
 
+    /**
+     * Asks internal-auth to revoke every refresh token / authorization the user
+     * holds for this client, so a device that is offline right now cannot
+     * silently refresh its way back in after an admin invalidates the session.
+     */
+    public void revokeUserSessions(String username) {
+        restClient.post()
+                .uri("/auth/revoke-sessions")
+                .header(HttpHeaders.AUTHORIZATION, basicAuthHeader)
+                .body(java.util.Map.of("username", username))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::handleDownstreamError)
+                .toBodilessEntity();
+    }
+
     public void deleteUser(String internalAuthUserId) {
         restClient.delete()
                 .uri(uriBuilder -> uriBuilder

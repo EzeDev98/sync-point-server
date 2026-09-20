@@ -18,7 +18,6 @@ import com.sp.syncPoint.feature.user.model.User;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
 import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import com.sp.syncPoint.feature.wallet.service.WalletAuthService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -71,7 +70,11 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         }
 
         Wallet wallet = walletRepository.findByPhoneNumber(request.getPhoneNumber())
-                .orElseThrow(() -> new EntityNotFoundException("No wallet found for phone number: " + request.getPhoneNumber()));
+                .orElseThrow(() -> {
+                    // Same response as a wrong password, so login cannot be used to find out which phone numbers are registered.
+                    log.warn("Login attempt for unregistered phone: {}", request.getPhoneNumber());
+                    return new UnauthorizedException("Invalid phone number or password");
+                });
 
         if (walletLockoutService.isLoginLocked(wallet)) {
             long remainingMinutes = walletLockoutService.getRemainingLoginLockTime(wallet);
@@ -82,7 +85,7 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         User user = wallet.getUser();
         if (user == null) {
             log.error("No user associated with wallet for phone: {}", request.getPhoneNumber());
-            throw new EntityNotFoundException("No user associated with this wallet");
+            throw new UnauthorizedException("Invalid phone number or password");
         }
 
         InternalAuthApiResponse<InternalAuthLoginResponse> authApiResponse;
@@ -113,13 +116,17 @@ public class WalletAuthServiceImpl implements WalletAuthService {
             throw new UnauthorizedException("Invalid phone number or password");
         }
 
+        InternalAuthLoginResponse loginResponse = authApiResponse.getData();
+        walletLockoutService.resetLoginAttempts(wallet);
+
+        // Only reached with a correct password, so "active on another device" is never shown to someone
+        // who merely knows the phone number. Relies on the sync-point client having "revoke other sessions
+        // on login" OFF in the internal-auth console, otherwise the login above would already have
+        // revoked the first device's refresh token.
         if (sessionManagementService.hasActiveSession(request.getPhoneNumber())) {
             log.warn("Login blocked for phone: {} — active session exists on another device", request.getPhoneNumber());
             throw new ActiveSessionExistsException("This account is currently active on another device. Please unlock and log out on that device before signing in here.");
         }
-
-        InternalAuthLoginResponse loginResponse = authApiResponse.getData();
-        walletLockoutService.resetLoginAttempts(wallet);
 
         sessionManagementService.createSession(user.getId(), request.getPhoneNumber(), loginResponse.getAccessToken());
         wallet.setStatus(true);
