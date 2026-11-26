@@ -1,9 +1,6 @@
 package com.sp.syncPoint.feature.wallet.service.impl;
 
-import com.sp.syncPoint.common.exception.BadRequestException;
-import com.sp.syncPoint.common.exception.InvalidPinException;
-import com.sp.syncPoint.common.exception.TransactionPinNotSetException;
-import com.sp.syncPoint.common.exception.WalletLockedException;
+import com.sp.syncPoint.common.exception.*;
 import com.sp.syncPoint.common.response.BaseResponse;
 import com.sp.syncPoint.common.response.ResponseService;
 import com.sp.syncPoint.common.support.EntityUtilityService;
@@ -12,7 +9,6 @@ import com.sp.syncPoint.feature.wallet.dto.request.PinRequest;
 import com.sp.syncPoint.feature.wallet.dto.request.SetPinRequest;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
 import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
-import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,11 +47,6 @@ class WalletPinServiceImplTest {
     @Mock
     private CurrentUserService currentUserService;
 
-    // PinHasher is a thin real wrapper over the mocked PasswordEncoder, and
-    // PinValidator / WalletLockoutService are spies running their real
-    // (relocated) logic while remaining verifiable — so every assertion in
-    // this test still exercises the same behaviour it did when that logic
-    // lived inside WalletPinServiceImpl, just one layer down.
     private PinHasher pinHasher;
     private PinValidator pinValidator;
     private WalletLockoutService walletLockoutService;
@@ -86,8 +77,6 @@ class WalletPinServiceImplTest {
         request.setConfirmNewPin(confirm);
         return request;
     }
-
-    // ── setPin ─────────────────────────────────────────────────────
 
     @Test
     void setPin_callerDoesNotOwnPhoneNumber_isDenied() {
@@ -122,8 +111,6 @@ class WalletPinServiceImplTest {
 
     @Test
     void setPin_weakPin_throwsBadRequestException() {
-        // isWeak is checked before the PIN-match check, so a weak PIN is
-        // rejected even when pin == confirmNewPin.
         SetPinRequest request = setPinRequest("1234", "1234");
         when(walletRepository.findByPhoneNumber("08010000001")).thenReturn(Optional.of(wallet));
 
@@ -165,8 +152,6 @@ class WalletPinServiceImplTest {
         assertThat(response.getStatusCode()).isEqualTo(201);
         verify(walletRepository).save(wallet);
     }
-
-    // ── changePin ──────────────────────────────────────────────────
 
     @Test
     void changePin_nullRequest_returnsErrorResponseWithoutTouchingWallet() {
@@ -266,8 +251,6 @@ class WalletPinServiceImplTest {
         verify(walletRepository).save(wallet);
     }
 
-    // ── isWalletPinSet / verifyPin ─────────────────────────────────
-
     @Test
     void isWalletPinSet_walletNotFound_throwsTransactionPinNotSetException() {
         when(entityUtilityService.fetchWallet("WM-1")).thenReturn(null);
@@ -311,8 +294,6 @@ class WalletPinServiceImplTest {
         assertThat(service.verifyPin("WM-1", "4321")).isTrue();
     }
 
-    // ── resetPin ───────────────────────────────────────────────────
-
     @Test
     void resetPin_weakPin_throwsInvalidPinException() {
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(wallet));
@@ -341,8 +322,6 @@ class WalletPinServiceImplTest {
         assertThat(wallet.getPinChangeAttempts()).isEqualTo(0);
         assertThat(wallet.getLocked()).isFalse();
         verify(walletRepository).save(wallet);
-        // Confirms the documented difference from changePin: no old-PIN
-        // check is performed anywhere in this flow.
         verify(passwordEncoder, never()).matches(anyString(), anyString());
     }
 }

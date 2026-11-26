@@ -22,11 +22,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
 
-        // TEMP DEBUG: logs the real reason (bad signature / wrong issuer /
-        // expired / malformed header) instead of a bare 401. Remove once
-        // the internal-auth cutover is verified working.
-        log.warn("401 on {} {} — {}: {}", request.getMethod(), request.getRequestURI(),
-                authException.getClass().getSimpleName(), authException.getMessage());
+        log.warn("401 on {} {} — {}: {}", request.getMethod(), request.getRequestURI(), authException.getClass().getSimpleName(), authException.getMessage());
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Request body for POST /api/v1/auth/refresh-token (Step 15C). */
 @Getter
 @Setter
 @NoArgsConstructor

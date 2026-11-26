@@ -8,19 +8,6 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-/**
- * Guards POST /admin/sessions/invalidate-by-username, the same way
- * {@code ResetAuthorizer} guards the danger-zone wipe endpoint: the caller
- * must present {@code X-Admin-Secret} matching {@code app.session-invalidate.secret}.
- * A blank/unset property disables the endpoint entirely, so the secret
- * doubles as the on/off switch - the same fail-closed posture as
- * app.reset.secret. Comparison is constant-time to avoid leaking the secret
- * through response timing.
- * <p>
- * A separate secret from app.reset.secret on purpose: this endpoint only
- * ever closes one user's session row, nowhere near the blast radius of the
- * full-database wipe that secret guards, so the two are not interchangeable.
- */
 @Slf4j
 @Component
 public class SessionInvalidateAuthorizer {

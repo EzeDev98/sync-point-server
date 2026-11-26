@@ -114,13 +114,6 @@ public class SessionManagementServiceImpl implements SessionManagementService {
                 }).orElse(false);
     }
 
-    /**
-     * An admin signing the user out in internal-auth deletes their refresh tokens there, but
-     * cannot reach this table. So before a stored session blocks a login, ask internal-auth
-     * whether the user still holds a live token. If it cannot be confirmed either way
-     * (unknown user, internal-auth unreachable) the session is kept, preserving the
-     * one-session-per-user guarantee.
-     */
     private boolean isStillLiveInInternalAuth(String phoneNumber) {
         var user = userRepository.findByPhoneNumber(phoneNumber);
         if (user.isEmpty()) {

@@ -18,18 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Danger-zone endpoint for wiping the whole dataset in a test environment -
- * both SyncPoint's own database and, via {@link DatabaseResetService}'s
- * downstream call, every internal-auth-server record scoped to this app.
- * <p>
- * Deliberately thin: it authorizes via {@link ResetAuthorizer}, delegates
- * the work to {@link DatabaseResetService}, and returns the combined
- * report. A rejected request throws from the guard and is shaped by
- * {@code GlobalExceptionHandler}. The path is opened in
- * {@code WebSecurityConfig} (no login required) so it can be triggered
- * with a single request — the secret is the guard.
- */
 @Slf4j
 @RestController
 @RequestMapping("${app.title}")

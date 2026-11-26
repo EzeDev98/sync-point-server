@@ -19,20 +19,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Server-to-server back channel: internal-auth (SyncPointSessionClient)
- * calls this the moment an admin uses "Logout all sessions" in its own
- * console, so this app's user_sessions row for that user is freed right
- * away instead of only on the user's next login attempt (the existing
- * SessionManagementServiceImpl#hasActiveSession pull against
- * POST /auth/session-status, which stays in place unchanged as the
- * fallback for whenever this push doesn't arrive).
- * <p>
- * Opened in WebSecurityConfig (no login required, same as
- * /admin/reset/wipe) since it is guarded instead by
- * {@link SessionInvalidateAuthorizer}'s required X-Admin-Secret header, and
- * is inert unless app.session-invalidate.secret is configured.
- */
 @Slf4j
 @RestController
 @RequestMapping("${app.title}")

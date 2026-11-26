@@ -76,10 +76,7 @@ class OtpResetEngineTest {
         when(cooldownBucket.isExists()).thenReturn(false);
 
         engine.rejectIfCoolingDown(cooldownBucket);
-        // no exception
     }
-
-    // ── invalidateExisting ─────────────────────────────────────────
 
     @Test
     void invalidateExisting_noPriorOtp_doesNotInvokeSave() {
@@ -104,8 +101,6 @@ class OtpResetEngineTest {
         verify(save).accept(existing);
     }
 
-    // ── populateNewOtp ─────────────────────────────────────────────
-
     @Test
     void populateNewOtp_setsAllSharedFields() {
         PinResetOtp otp = new PinResetOtp();
@@ -121,8 +116,6 @@ class OtpResetEngineTest {
         assertThat(otp.getExpiresAt()).isAfter(LocalDateTime.now().plusMinutes(9));
         assertThat(otp.getLastSentAt()).isNotNull();
     }
-
-    // ── verify ─────────────────────────────────────────────────────
 
     @Test
     void verify_expiredOtp_marksExpiredSavesAndThrows() {
@@ -194,8 +187,6 @@ class OtpResetEngineTest {
         verify(save).accept(otp);
     }
 
-    // ── token usability ────────────────────────────────────────────
-
     @Test
     void assertUsable_usedToken_throwsWithGivenMessage() {
         PinResetToken token = new PinResetToken();
@@ -224,7 +215,6 @@ class OtpResetEngineTest {
         token.setExpiresAt(LocalDateTime.now().plusMinutes(5));
 
         engine.assertUsable(token, "custom expired message");
-        // no exception
     }
 
     @Test

@@ -18,22 +18,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.util.Base64;
 
-/**
- * Registers the caller's offline-transfer signing key on their own wallet.
- * <p>
- * The wallet is resolved from the authenticated JWT (never from a
- * request-supplied identifier), so this endpoint can only ever set the key
- * for the caller. Registering a key for yourself is not a privileged action:
- * the key only ever authorizes transfers <em>you</em> send, so the worst a
- * caller can do is register a bad key and make their own transfers
- * unverifiable.
- * <p>
- * Re-registration overwrites the previous key, which is what makes the
- * "enroll once on next login" migration and re-install on a new device work.
- * The trade-off: a transfer still in flight that was signed with a superseded
- * key will no longer verify — acceptable under the single-active-device model
- * the login flow already enforces.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -50,8 +34,6 @@ public class WalletSigningKeyServiceImpl implements WalletSigningKeyService {
             throw new BadRequestException("signingPublicKey is required");
         }
 
-        // Fail fast on garbage rather than storing a key that would make every
-        // future transfer silently fail verification.
         assertParseableEcPublicKey(signingPublicKey);
 
         String phoneNumber = currentUserService.getCurrentPhoneNumber();

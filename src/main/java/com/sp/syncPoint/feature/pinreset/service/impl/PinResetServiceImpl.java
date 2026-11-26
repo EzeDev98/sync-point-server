@@ -1,5 +1,6 @@
 package com.sp.syncPoint.feature.pinreset.service.impl;
 
+import com.sp.syncPoint.common.exception.NotFoundException;
 import com.sp.syncPoint.common.exception.OtpInvalidException;
 import com.sp.syncPoint.common.exception.ResetTokenInvalidException;
 import com.sp.syncPoint.common.reset.OtpResetEngine;
@@ -21,7 +22,6 @@ import com.sp.syncPoint.feature.pinreset.service.PinResetService;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
 import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import com.sp.syncPoint.feature.wallet.service.WalletPinService;
-import jakarta.ws.rs.NotFoundException;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
@@ -31,16 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.PIN_RESET_COOLDOWN_KEY_PREFIX;
 
-
-/**
- * Orchestrates the wallet PIN-reset flow. Deliberately reuses OtpService,
- * OtpDeliveryService, and the shared OTP/reset-token machinery
- * ({@link OtpResetEngine}) from the password-reset feature — the
- * cryptographic/delivery/error-handling machinery is identical, only the
- * domain target (Wallet.pin vs User.password/Keycloak) and trust model
- * (authenticated vs public) differ. See PinResetService for a summary of
- * those differences.
- */
 @Service
 public class PinResetServiceImpl implements PinResetService {
 

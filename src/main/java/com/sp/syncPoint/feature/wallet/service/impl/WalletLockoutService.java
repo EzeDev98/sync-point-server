@@ -13,22 +13,6 @@ import java.time.LocalDateTime;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.*;
 
-
-/**
- * Sole owner of wallet lockout state — both the LOGIN counters
- * ({@code loginAttempts}/{@code loginLockUntil}) and the PIN-CHANGE
- * counters ({@code pinChangeAttempts}/{@code lastPinChangeAttempt}), plus
- * the shared wallet-lock flag ({@code locked}/{@code lockedUntil}).
- * <p>
- * The {@code recordFailed*} mutators run in their own transaction so a
- * failed attempt is persisted even when the surrounding operation rolls
- * back. The remaining methods are pure in-memory state transitions on an
- * already-loaded {@link Wallet}; the caller persists within its own
- * transaction. The lock-state queries and counter resets were consolidated
- * here from {@code WalletPinServiceImpl} and {@code WalletAuthServiceImpl}
- * during the phase-2 separation-of-concerns pass (the two services
- * previously each carried their own copy) — no rule changed in the move.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -72,12 +56,6 @@ public class WalletLockoutService {
                 .orElse(0);
     }
 
-    // ── shared wallet lock flag ────────────────────────────────────
-
-    /**
-     * True when the wallet is currently locked. A lock whose window has
-     * already elapsed is cleared in-place and reported as unlocked.
-     */
     public boolean isWalletLocked(Wallet wallet) {
         if (!Boolean.TRUE.equals(wallet.getLocked())) return false;
 
@@ -95,8 +73,6 @@ public class WalletLockoutService {
         wallet.setLocked(false);
         wallet.setLockedUntil(null);
     }
-
-    // ── PIN-change lock state ──────────────────────────────────────
 
     public boolean isLockedForPinChange(Wallet wallet) {
         Integer attempts = wallet.getPinChangeAttempts();
@@ -132,12 +108,6 @@ public class WalletLockoutService {
         wallet.setLastPinChangeAttempt(null);
     }
 
-    // ── login lock state ───────────────────────────────────────────
-
-    /**
-     * True when a login lock is currently in force. An elapsed lock is
-     * cleared in-place (attempts reset) and reported as unlocked.
-     */
     public boolean isLoginLocked(Wallet wallet) {
         LocalDateTime loginLockUntil = wallet.getLoginLockUntil();
         if (loginLockUntil == null) return false;

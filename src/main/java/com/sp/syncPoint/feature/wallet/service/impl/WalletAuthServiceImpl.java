@@ -29,22 +29,6 @@ import org.springframework.web.client.RestClientResponseException;
 import static com.sp.syncPoint.common.constants.GeneralConstants.MAX_LOGIN_ATTEMPTS;
 import static com.sp.syncPoint.common.constants.GeneralConstants.WALLET_LOCKED_DURATION;
 
-
-/**
- * Wallet login and account-existence checks.
- * <p>
- * Extracted from the original {@code WalletServiceImpl} god class as part
- * of the earlier SOLID refactor — this class owns exactly one
- * responsibility: "can this caller establish a session". Wallet
- * provisioning lives in {@link WalletProvisioningServiceImpl}, PIN
- * management in {@link WalletPinServiceImpl}.
- * <p>
- * Login-lock state (is-locked / remaining-time / attempt reset) is owned by
- * {@link WalletLockoutService}; this service consulted its own inline copy
- * before the phase-2 separation-of-concerns pass consolidated that logic —
- * along with the identical copy in {@code WalletPinServiceImpl} — into the
- * lockout service. No behaviour changed in the move.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -71,7 +55,6 @@ public class WalletAuthServiceImpl implements WalletAuthService {
 
         Wallet wallet = walletRepository.findByPhoneNumber(request.getPhoneNumber())
                 .orElseThrow(() -> {
-                    // Same response as a wrong password, so login cannot be used to find out which phone numbers are registered.
                     log.warn("Login attempt for unregistered phone: {}", request.getPhoneNumber());
                     return new UnauthorizedException("Invalid phone number or password");
                 });
@@ -88,8 +71,6 @@ public class WalletAuthServiceImpl implements WalletAuthService {
             throw new UnauthorizedException("Invalid phone number or password");
         }
 
-        // Worked out before internal-auth is called but only acted on after the password is
-        // verified, so "active on another device" is never shown to someone without it.
         boolean activeSessionElsewhere = sessionManagementService.hasActiveSession(request.getPhoneNumber());
 
         InternalAuthApiResponse<InternalAuthLoginResponse> authApiResponse;
@@ -98,13 +79,6 @@ public class WalletAuthServiceImpl implements WalletAuthService {
            authApiResponse = authClient.login(new LoginRequest(user.getUsername(), request.getPassword()));
         } catch (RestClientResponseException ex) {
 
-            // internal-auth-server rejects an unverified account's login with a
-            // 403 (AccountNotVerifiedException there) even when the password is
-            // correct. That must not be treated as a failed-password attempt —
-            // it shouldn't count toward the lockout, and the caller needs to be
-            // able to tell it apart from "wrong password" so the client can
-            // route the user to verification instead of showing a generic
-            // sign-in error.
             if (ex.getStatusCode().value() == 403) {
                 log.warn("Login blocked for phone: {} — account not verified", request.getPhoneNumber());
                 throw new AccountNotVerifiedException(extractAuthErrorMessage(ex));
@@ -123,14 +97,7 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         InternalAuthLoginResponse loginResponse = authApiResponse.getData();
         walletLockoutService.resetLoginAttempts(wallet);
 
-        // Only reached with a correct password, so "active on another device" is never shown to someone
-        // who merely knows the phone number. Relies on the sync-point client having "revoke other sessions
-        // on login" OFF in the internal-auth console, otherwise the login above would already have
-        // revoked the first device's refresh token.
         if (activeSessionElsewhere) {
-            // The password was correct, so internal-auth has just issued a token pair for this
-            // refused login. Revoke it: left alone it would make internal-auth report the user as
-            // signed in, and keep blocking every later login, until it expired.
             try {
                 authClient.logout(loginResponse.getAccessToken());
             } catch (RuntimeException ex) {
@@ -153,11 +120,6 @@ public class WalletAuthServiceImpl implements WalletAuthService {
         return entityUtilityService.existByPhoneNumber(phoneNumber);
     }
 
-    /**
-     * Extracts internal-auth-server's own error message from a failed-login
-     * response, mirroring {@code PhoneVerificationServiceImpl#translateAuthError}.
-     * Falls back to a generic message if the body isn't the expected shape.
-     */
     private String extractAuthErrorMessage(RestClientResponseException ex) {
         try {
             InternalAuthApiResponse<?> body = objectMapper.readValue(

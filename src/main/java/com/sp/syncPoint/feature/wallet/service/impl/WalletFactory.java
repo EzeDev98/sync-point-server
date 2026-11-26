@@ -17,17 +17,6 @@ import static com.sp.syncPoint.feature.transaction.enums.EntryType.CREDIT;
 import static com.sp.syncPoint.feature.transaction.enums.TransactionStatus.COMPLETED;
 import static com.sp.syncPoint.feature.transaction.enums.TransactionType.WALLET_CAPITALIZATION;
 
-/**
- * Builds the entity graph for wallet provisioning — the new {@link Wallet},
- * its capitalization {@link Transaction}, and the {@link WalletFundingRecord}.
- * <p>
- * Extracted from {@code WalletProvisioningServiceImpl} during the phase-2
- * separation-of-concerns pass: the service now orchestrates the treasury
- * debit and persistence, and delegates pure entity construction here. Every
- * method only builds and returns a detached entity — none touches a
- * repository. Field values, ID generation, and the transaction description
- * are unchanged from the former private helpers.
- */
 @Component
 @RequiredArgsConstructor
 public class WalletFactory {

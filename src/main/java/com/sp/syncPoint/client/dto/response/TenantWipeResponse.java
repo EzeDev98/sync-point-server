@@ -7,9 +7,6 @@ import lombok.Setter;
 
 import java.util.Map;
 
-/**
- * Response body for POST {internal-auth}/admin/reset/wipe-tenant.
- */
 @Getter
 @Setter
 @NoArgsConstructor

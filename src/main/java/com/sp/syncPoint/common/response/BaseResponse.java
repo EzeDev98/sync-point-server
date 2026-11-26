@@ -9,48 +9,12 @@ import java.util.Map;
 @Getter
 public class BaseResponse {
 
-    /**
-     * -- GETTER --
-     *  get the value of the HTTP status code for the response payload
-     *
-     *
-     * -- SETTER --
-     *  set the value of the HTTP status code for the response payload
-     *
-     */
     private int statusCode;
 
-    /**
-     * -- GETTER --
-     *  set the description of the result of current http request
-     *
-     *
-     * -- SETTER --
-     *  set the description of the result of current http request
-     *
-     */
     private String description;
 
-    /**
-     * -- GETTER --
-     *  get the data for the response payload
-     *
-     *
-     * -- SETTER --
-     *  set the data for the response payload
-     *
-     */
     private Object data;
 
-    /**
-     * -- GETTER --
-     *  get the errors that occurred during the current request
-     *
-     *
-     * -- SETTER --
-     *  set the errors that occurred during the current request
-     *
-     */
     private Object errors;
 
 	private Map<String, Object> additionalData;

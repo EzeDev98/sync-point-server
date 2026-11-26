@@ -1,5 +1,6 @@
 package com.sp.syncPoint.feature.pinreset.service.impl;
 
+import com.sp.syncPoint.common.exception.NotFoundException;
 import com.sp.syncPoint.common.exception.OtpInvalidException;
 import com.sp.syncPoint.common.exception.OtpResendCooldownException;
 import com.sp.syncPoint.common.exception.ResetTokenInvalidException;
@@ -20,7 +21,6 @@ import com.sp.syncPoint.feature.pinreset.repository.PinResetTokenRepository;
 import com.sp.syncPoint.feature.wallet.model.Wallet;
 import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import com.sp.syncPoint.feature.wallet.service.WalletPinService;
-import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,8 +63,6 @@ class PinResetServiceImplTest {
     @Mock
     private RBucket<String> cooldownBucket;
 
-    // Real engine backed by the mocked OtpService, same rationale as
-    // PasswordResetServiceImplTest — this exercises the actual shared logic.
     private OtpResetEngine otpResetEngine;
 
     private PinResetServiceImpl service;
@@ -98,11 +96,6 @@ class PinResetServiceImplTest {
 
         assertThatThrownBy(() -> service.requestOtp(request))
                 .isInstanceOf(NotFoundException.class);
-        // Unlike PasswordResetServiceImpl, wallet existence is checked
-        // BEFORE the cooldown bucket — PIN reset has no user-enumeration
-        // concern (the caller already knows the phone number is registered),
-        // so this ordering difference from password reset is intentional
-        // and preserved, not a bug.
         verify(redissonClient, never()).getBucket(anyString());
     }
 
@@ -141,8 +134,6 @@ class PinResetServiceImplTest {
         verify(cooldownBucket).set(anyString(), any());
     }
 
-    // ── verifyOtp ──────────────────────────────────────────────────
-
     @Test
     void verifyOtp_noActiveOtp_throwsOtpInvalidException() {
         when(pinResetOtpRepository.findTopByPhoneNumberAndStatusOrderByCreatedAtDesc(any(), any()))
@@ -177,8 +168,6 @@ class PinResetServiceImplTest {
         verify(pinResetTokenRepository).save(captor.capture());
         assertThat(captor.getValue().getWalletId()).isEqualTo(7L);
     }
-
-    // ── completeReset ──────────────────────────────────────────────
 
     @Test
     void completeReset_blankResetToken_throwsResetTokenInvalidException() {
@@ -234,10 +223,6 @@ class PinResetServiceImplTest {
         PinResetResponse response = service.completeReset(request);
 
         assertThat(response.getStatusCode()).isEqualTo(200);
-        // The actual PIN-format/strength/mismatch validation is owned by
-        // WalletPinService.resetPin (see WalletPinServiceImplTest) — this
-        // class's only job is to authorize the call via the reset token
-        // and delegate.
         verify(walletService).resetPin("08010000001", "7358", "7358");
         assertThat(token.isUsed()).isTrue();
         verify(pinResetTokenRepository).save(token);

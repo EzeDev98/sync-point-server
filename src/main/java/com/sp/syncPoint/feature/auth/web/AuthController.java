@@ -6,7 +6,6 @@ import com.sp.syncPoint.feature.auth.service.AuthService;
 import com.sp.syncPoint.feature.session.service.SessionManagementService;
 import com.sp.syncPoint.feature.user.service.impl.CurrentUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.keycloak.representations.AccessTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;

@@ -14,8 +14,6 @@ class PinValidatorTest {
 
     private final PinValidator validator = new PinValidator();
 
-    // ── setPinValidation ───────────────────────────────────────────
-
     private SetPinRequest validSetPinRequest() {
         SetPinRequest request = new SetPinRequest();
         request.setPhoneNumber("08010000001");
@@ -67,8 +65,6 @@ class PinValidatorTest {
                 .hasMessage("Pin must be exactly 4 digits");
     }
 
-    // ── validateRequiredFields ─────────────────────────────────────
-
     @Test
     void validateRequiredFields_allPresent_returnsTrue() {
         BaseResponse response = new BaseResponse();
@@ -101,8 +97,6 @@ class PinValidatorTest {
         assertThat(validator.validateRequiredFields(response)).isTrue();
     }
 
-    // ── isNotValidFormat (moved from WalletPinServiceImpl) ──────────
-
     @Test
     void isNotValidFormat_fourDigits_returnsFalse() {
         assertThat(validator.isNotValidFormat("7358")).isFalse();
@@ -123,8 +117,6 @@ class PinValidatorTest {
     void isNotValidFormat_null_returnsTrue() {
         assertThat(validator.isNotValidFormat(null)).isTrue();
     }
-
-    // ── isWeak (moved from WalletPinServiceImpl) ───────────────────
 
     @Test
     void isWeak_guessablePins_returnTrue() {

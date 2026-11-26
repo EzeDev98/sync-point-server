@@ -13,42 +13,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.Base64;
 
-/**
- * Verifies the sender's cryptographic authorization of an offline P2P
- * transfer.
- * <p>
- * This is the server-side counterpart of the client's
- * {@code core/crypto/transferSignature.js}, and the security replacement for
- * the old {@code assertOwnsPhoneNumber} check on the sync endpoint. Once a
- * receiver is allowed to settle a transfer they received — i.e. to submit a
- * batch whose sender is someone else — "the caller owns the sender phone" can
- * no longer be the guard, because it is no longer true. What guards the
- * credit instead is this: the transfer carries a signature that only the
- * genuine sender's private key could have produced, over a canonical
- * description of that exact transfer, and we verify it here against the
- * sender wallet's registered public key. Without the sender's key nobody can
- * forge a credit into any wallet.
- * <p>
- * The canonical string, algorithm, signature encoding and key encoding must
- * stay byte-for-byte identical to the client:
- * <pre>
- *   algorithm   ECDSA, curve P-256, digest SHA-256
- *   signature   raw IEEE-P1363 (r||s), base64 (WebCrypto's native output);
- *               verified with "SHA256withECDSAinP1363Format"
- *   public key  SPKI/X.509 DER, base64
- *   payload     SYNCPOINT-TRANSFER|v1|{transactionRef}|{requestRef}
- *               |{senderWalletId}|{receiverWalletId}|{amountInKobo}
- *               |{currency}|{createdAtEpochMillis}
- * </pre>
- * Amount is serialised as integer kobo and time as epoch-millis so that no
- * decimal-scale or timestamp-format difference between the JVM and the
- * browser can quietly break verification.
- * <p>
- * {@link #verify} never throws: any malformed key, malformed signature, or
- * mismatch is a failed verification and returns {@code false}. The caller
- * decides what a failed verification means (reject that one transfer), which
- * keeps a single bad entry from poisoning an otherwise valid batch.
- */
 @Slf4j
 @Component
 public class TransferSignatureVerifier {
@@ -59,11 +23,6 @@ public class TransferSignatureVerifier {
     private static final String KEY_ALGORITHM = "EC";
     private static final String SIGNATURE_ALGORITHM = "SHA256withECDSAinP1363Format";
 
-    /**
-     * The exact string that was signed on the sending device. Exposed so any
-     * caller that needs to log or debug what was verified uses one definition
-     * of the format rather than rebuilding it.
-     */
     public String canonicalTransferString(
             String transactionRef,
             String requestRef,
@@ -85,19 +44,6 @@ public class TransferSignatureVerifier {
                 String.valueOf(createdAt.toEpochMilli()));
     }
 
-    /**
-     * Verifies a transfer signature against the sender wallet's registered
-     * public key.
-     *
-     * @param senderPublicKeyBase64 the sender wallet's registered SPKI public
-     *                              key; a missing key means the sender never
-     *                              enrolled and cannot be trusted, so this
-     *                              returns {@code false}
-     * @param signatureBase64       the base64 P1363 signature carried with the
-     *                              transfer
-     * @return {@code true} only when the signature is a valid P-256/SHA-256
-     *         signature by that key over this transfer's canonical payload
-     */
     public boolean verify(
             String senderPublicKeyBase64,
             String transactionRef,
@@ -132,8 +78,6 @@ public class TransferSignatureVerifier {
             return valid;
 
         } catch (Exception e) {
-            // Malformed key, malformed signature, unsupported algorithm — all
-            // are simply "not verified". Never let it escape as a 5xx.
             log.warn("[TransferSignature] Verification error for transfer {}: {}", transactionRef, e.getMessage());
             return false;
         }

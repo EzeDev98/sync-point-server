@@ -13,17 +13,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
-/**
- * Validates PIN-domain input: presence and shape of a set-PIN request, the
- * generic required-fields guard, PIN format, and PIN strength.
- * <p>
- * Extracted from the original {@code ValidateService} grab-bag as part of
- * the earlier SOLID refactor; the format ({@link #isNotValidFormat}) and
- * strength ({@link #isWeak}) rules were then moved here verbatim from
- * {@code WalletPinServiceImpl} during the phase-2 separation-of-concerns
- * pass, so all PIN-input validation now lives in one place. No rule
- * changed during either move.
- */
 @Slf4j
 @Component
 public class PinValidator {
@@ -65,16 +54,10 @@ public class PinValidator {
         return true;
     }
 
-    /** True when the PIN is null or not exactly four digits. */
     public boolean isNotValidFormat(String pin) {
         return pin == null || !pin.matches("\\d{4}");
     }
 
-    /**
-     * True when a PIN is trivially guessable — a well-known common PIN,
-     * all-identical digits, an ascending/descending run, or a repeated
-     * two-digit pattern (e.g. 1212).
-     */
     public boolean isWeak(String pin) {
         if (pin == null) return false;
 

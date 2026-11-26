@@ -125,12 +125,6 @@ public class Transaction {
     @Column(name = "failure_reason")
     private String failureReason;
 
-    // Fix issue #11: @Version kept for optimistic locking on Transaction records.
-    // NOTE: wallet locking uses PESSIMISTIC_WRITE (see WalletRepository).
-    // The @Retryable on syncTransactions handles OptimisticLockingFailureException
-    // on Transaction rows only. These two strategies are intentionally separated:
-    // wallets use pessimistic locking because balance correctness is critical;
-    // transaction records use optimistic locking because contention is lower.
     @Version
     private Long version;
 }

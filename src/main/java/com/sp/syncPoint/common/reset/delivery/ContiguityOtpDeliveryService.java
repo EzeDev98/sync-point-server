@@ -16,25 +16,6 @@ import java.util.Map;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.REQUEST_TIMEOUT;
 
-/**
- * OtpDeliveryService implementation backed by Contiguity's plain Text
- * (SMS) API — https://docs.contiguity.com/products/text.
- *
- * We deliberately use Contiguity's raw text-send endpoint rather than its
- * own OTP-management API: this app already owns OTP generation, hashing,
- * expiry, and attempt-limiting (see OtpService / PasswordResetServiceImpl),
- * so Contiguity is used purely as an SMS transport, keeping exactly one
- * source of truth for OTP verification.
- *
- * Activate by setting app.otp.provider=contiguity and providing
- * contiguity.api-key (see application.properties). Contiguity's free tier
- * includes 500 SMS/month at no cost.
- *
- * Delivery failures are logged but never thrown: a provider outage must not
- * change the response returned by the password-reset "request OTP" endpoint,
- * or it would leak whether a phone number is registered (only registered
- * numbers trigger an actual send attempt).
- */
 @Service
 @ConditionalOnProperty(prefix = "app.otp", name = "provider", havingValue = "contiguity")
 public class ContiguityOtpDeliveryService implements OtpDeliveryService {
@@ -99,12 +80,6 @@ public class ContiguityOtpDeliveryService implements OtpDeliveryService {
         }
     }
 
-    /**
-     * Contiguity requires E.164 (e.g. +2348012345678). This app stores
-     * Nigerian numbers without a country code (see the ^\+?[0-9]{11}$
-     * phone-format rule enforced at registration/reset time), so we
-     * default to +234 when no '+' is present.
-     */
     private String toE164(String phoneNumber) {
         if (phoneNumber.startsWith("+")) {
             return phoneNumber;

@@ -33,17 +33,6 @@ import static com.sp.syncPoint.feature.transaction.enums.TransactionType.OFFLINE
 import static com.sp.syncPoint.feature.transaction.enums.TransactionType.ONLINE_WALLET_FUNDING;
 import static java.math.BigDecimal.ZERO;
 
-/**
- * Moves funds between a user's online mirror balance and offline wallet.
- * <p>
- * Extracted from the original {@code TransactionServiceImpl} god class as
- * part of the SOLID refactor. The two operations here were near-identical
- * copy-pasted blocks in the original file (same field validation, same
- * idempotent-replay-on-{@code requestRef} handling, same exception
- * translation) — that duplication is now consolidated into shared helpers
- * below. No validation rule, ordering, exception type, or message text was
- * changed; only the duplicated structure around them was.
- */
 @Service
 @RequiredArgsConstructor
 public class WalletFundingServiceImpl implements WalletFundingService {
@@ -132,16 +121,6 @@ public class WalletFundingServiceImpl implements WalletFundingService {
         });
     }
 
-    // ─────────────────────────────────────────────
-    // HELPERS
-    // ─────────────────────────────────────────────
-
-    /**
-     * Field validation and ownership check shared by both funding
-     * operations. Deliberately runs outside {@link #executeFundingOperation}
-     * so these exceptions propagate exactly as before — un-translated,
-     * straight to {@code GlobalExceptionHandler}.
-     */
     private void validateFundingRequest(WalletTransferRequest request) {
         if (request.getPhoneNumber() == null || request.getPhoneNumber().isBlank()) {
             throw new EmptyFieldException("Phone number must not be null or empty", HttpStatus.BAD_REQUEST);
@@ -159,8 +138,6 @@ public class WalletFundingServiceImpl implements WalletFundingService {
             throw new EmptyFieldException("Request reference must not be null or empty", HttpStatus.BAD_REQUEST);
         }
 
-        // Defense in depth alongside the PIN check below: the PIN alone binds
-        // the request to *a* wallet, but not to *this* JWT's identity.
         currentUserService.assertOwnsPhoneNumber(request.getPhoneNumber());
     }
 
@@ -179,15 +156,6 @@ public class WalletFundingServiceImpl implements WalletFundingService {
         return new WalletFundingResponse(HttpServletResponse.SC_OK, "Wallet funded successfully", priorTransaction.getAmount(), priorTransaction.getTransactionReference());
     }
 
-    /**
-     * Saves the transaction, and if a concurrent request already persisted
-     * the same {@code requestRef} (caught via the DB unique constraint),
-     * returns the prior transaction's response instead of failing.
-     *
-     * @return the idempotent-replay response if a duplicate was detected,
-     *         otherwise empty (meaning the save succeeded and the caller
-     *         should proceed)
-     */
     private Optional<WalletFundingResponse> saveTransactionIdempotently(Transaction transaction, String requestRef) {
         try {
             transactionRepository.save(transaction);
@@ -199,13 +167,6 @@ public class WalletFundingServiceImpl implements WalletFundingService {
         }
     }
 
-    /**
-     * Runs a funding operation and translates its exceptions exactly as the
-     * original inline try/catch did in both {@code fundOfflineWallet} and
-     * {@code transferToOnlineAccount} — those two catch blocks were
-     * byte-for-byte identical in the pre-refactor code, which is what makes
-     * this extraction safe.
-     */
     private WalletFundingResponse executeFundingOperation(Supplier<WalletFundingResponse> operation) {
         try {
             return operation.get();

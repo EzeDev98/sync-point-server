@@ -76,32 +76,13 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/password-reset/complete").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/keep-alive").permitAll()
-                        // Spring Boot forwards any unhandled 404/500 to /error, and that
-                        // forward goes through this filter chain as an ERROR dispatch. If
-                        // /error isn't permitted it falls to anyRequest().authenticated(),
-                        // gets denied, and — since no formLogin/httpBasic is configured,
-                        // making Http403ForbiddenEntryPoint the default — comes back as a
-                        // 403. The real 404 or 500 is never seen. Every "mysterious 403 on
-                        // a path I definitely permitted" in a stateless API traces back to
-                        // this line being missing.
+
                         .requestMatchers("/error").permitAll()
-                        // Render's health check hits this path unauthenticated. Only
-                        // /actuator/health itself is exposed — no other /actuator/**
-                        // endpoint is permitted, so nothing else in Actuator (env,
-                        // beans, etc.) is reachable without a token.
+
                         .requestMatchers("/actuator/health").permitAll()
 
-                        // Danger-zone data wipe (test environments). Opened here so it can be
-                        // called without a Keycloak login; it is guarded instead by a required
-                        // X-Reset-Secret plus a confirmation phrase, and is inert unless
-                        // app.reset.secret is configured. See AdminResetController.
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/reset/wipe").permitAll()
 
-                        // Server-to-server push from internal-auth's "Logout all sessions" console
-                        // action (SyncPointSessionClient). Opened here so it can be called without
-                        // a Keycloak login; it is guarded instead by a required X-Admin-Secret, and
-                        // is inert unless app.session-invalidate.secret is configured. See
-                        // AdminSessionController / SessionInvalidateAuthorizer.
                         .requestMatchers(HttpMethod.POST, "/api/v1/admin/sessions/invalidate-by-username").permitAll()
 
                         .requestMatchers("/public/**").permitAll()

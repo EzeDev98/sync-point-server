@@ -14,18 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Assembles the {@link BaseResponse}/{@link TransactionResponse} envelopes
- * returned by the batch sync engine.
- * <p>
- * Extracted from {@code TransactionSyncServiceImpl} during the phase-2
- * separation-of-concerns pass: the service orchestrates the sync, this class
- * shapes what comes back. The map keys, status codes, count arithmetic, and
- * message text are byte-for-byte the former inline {@code build*Response}
- * helpers — including the known completed-vs-failed count asymmetry
- * ({@code completed.size() / 2} but {@code failed.size()}), left unchanged
- * as a deferred fix.
- */
 @Component
 @RequiredArgsConstructor
 public class TransactionResponseAssembler {

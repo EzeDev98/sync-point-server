@@ -49,8 +49,6 @@ class WalletFundingServiceImplTest {
     @Mock
     private CurrentUserService currentUserService;
 
-    // Real PinHasher over the still-mocked PasswordEncoder, so the existing
-    // passwordEncoder.matches(...) stubs keep driving PIN verification.
     private PinHasher pinHasher;
 
     private WalletFundingServiceImpl service;
@@ -83,8 +81,6 @@ class WalletFundingServiceImplTest {
         request.setRequestRef("REQ-1");
         return request;
     }
-
-    // ── fundOfflineWallet ──────────────────────────────────────────
 
     @Test
     void fundOfflineWallet_missingPhoneNumber_throwsEmptyFieldException() {
@@ -175,7 +171,6 @@ class WalletFundingServiceImplTest {
 
     @Test
     void fundOfflineWallet_amountAboveOfflineLimit_throwsBadRequestException() {
-        // offlineLimit is 2000.00 on the fixture wallet
         WalletTransferRequest request = validRequest(new BigDecimal("2500.00"));
 
         when(transactionRepository.findByRequestRef("REQ-1")).thenReturn(Optional.empty());
@@ -260,14 +255,11 @@ class WalletFundingServiceImplTest {
         WalletFundingResponse response = service.fundOfflineWallet(request);
 
         assertThat(response.getTransactionRef()).isEqualTo("TXN-WINNER");
-        // The racing request that lost must not also mutate the wallet balance.
         verify(walletRepository, never()).save(wallet);
     }
 
     @Test
     void transferToOnlineAccount_happyPath_creditsMirrorBalanceWithNoOfflineLimitCheck() {
-        // Deliberately above offlineLimit (2000.00) to prove the offline-limit
-        // check that applies to fundOfflineWallet does NOT apply here.
         WalletTransferRequest request = validRequest(new BigDecimal("3000.00"));
         Transaction newTransaction = new Transaction();
         newTransaction.setTransactionReference("TXN-ONLINE");

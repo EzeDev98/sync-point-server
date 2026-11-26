@@ -10,8 +10,6 @@ class ResetValidatorTest {
 
     private final ResetValidator validator = new ResetValidator();
 
-    // ── validatePhoneNumberFoResetOperations ──────────────────────
-
     @Test
     void validatePhoneNumberFoResetOperations_valid_doesNotThrow() {
         assertThatCode(() -> validator.validatePhoneNumberFoResetOperations("08010000001"))
@@ -31,8 +29,6 @@ class ResetValidatorTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Please enter a valid phone number");
     }
-
-    // ── validateOtpFormat ──────────────────────────────────────────
 
     @Test
     void validateOtpFormat_correctLength_doesNotThrow() {
@@ -60,8 +56,6 @@ class ResetValidatorTest {
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("The verification code is invalid");
     }
-
-    // ── validateNewPassword ────────────────────────────────────────
 
     @Test
     void validateNewPassword_valid_doesNotThrow() {

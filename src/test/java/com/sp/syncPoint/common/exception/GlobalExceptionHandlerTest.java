@@ -11,8 +11,6 @@ class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
-    // ── registry-driven simple mappings (spot checks across the range) ──
-
     @Test
     void handleMappedRuntimeException_notFoundStyleException_mapsToNotFound() {
         ProblemDetail problem = handler.handleMappedRuntimeException(new WalletNotFoundException("no wallet"));
@@ -65,8 +63,6 @@ class GlobalExceptionHandlerTest {
         assertThat(problem.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     }
 
-    // ── unmapped RuntimeException falls back to the generic handling ────
-
     @Test
     void handleMappedRuntimeException_unrecognizedRuntimeException_fallsBackToGenericUnexpectedError() {
         ProblemDetail problem = handler.handleMappedRuntimeException(new IllegalStateException("boom"));
@@ -75,8 +71,6 @@ class GlobalExceptionHandlerTest {
         assertThat(problem.getDetail()).isEqualTo("An unexpected error occurred. Please try again later.");
         assertThat(problem.getProperties()).containsKey("traceId");
     }
-
-    // ── exceptions with custom behavior keep their own handler ──────────
 
     @Test
     void handleDuplicateTransactionCheckException_mapsToInternalServerError() {
@@ -110,12 +104,9 @@ class GlobalExceptionHandlerTest {
                 new SystemWalletInsufficientBalanceException("internal treasury details"));
 
         assertThat(problem.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
-        // Deliberately does NOT leak the raw exception message to the client.
         assertThat(problem.getDetail()).isEqualTo("This operation is temporarily unavailable. Please try again shortly.");
         assertThat(problem.getTitle()).isEqualTo("Service Temporarily Unavailable");
     }
-
-    // ── true catch-all for anything else (including checked exceptions) ─
 
     @Test
     void handleGeneric_producesTraceIdAndGenericMessage() {

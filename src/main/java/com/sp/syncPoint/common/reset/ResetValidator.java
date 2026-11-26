@@ -3,16 +3,6 @@ package com.sp.syncPoint.common.reset;
 import com.sp.syncPoint.common.exception.BadRequestException;
 import org.springframework.stereotype.Component;
 
-/**
- * Validates input for the OTP-based reset flows.
- * <p>
- * Extracted from the original {@code ValidateService} grab-bag as part of
- * the SOLID refactor. Shared by {@code PasswordResetServiceImpl} and
- * {@code PinResetServiceImpl} — the same two classes that already share
- * {@link OtpResetEngine} for the reset-mechanics side of this feature; this
- * class is the input-validation counterpart for that same domain. No rule
- * changed during the move.
- */
 @Component
 public class ResetValidator {
 
@@ -34,11 +24,6 @@ public class ResetValidator {
         }
     }
 
-    /**
-     * Reuses the same minimum-length rule enforced during registration
-     * (see RegistrationValidator) so password strength requirements aren't
-     * duplicated inconsistently between flows.
-     */
     public void validateNewPassword(String newPassword, String confirmPassword) {
         if (newPassword == null || newPassword.isBlank()) {
             throw new BadRequestException("Password is required");

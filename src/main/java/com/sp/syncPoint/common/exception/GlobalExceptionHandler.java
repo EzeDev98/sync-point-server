@@ -1,10 +1,10 @@
 package com.sp.syncPoint.common.exception;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.ws.rs.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,42 +14,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Central exception-to-HTTP-response translation.
- * <p>
- * Most exceptions in this application map 1:1 to an HTTP status with no
- * special handling: no custom message, no logging, no extra
- * {@code ProblemDetail} properties. Before this refactor, each of those
- * ~37 exceptions had its own near-identical four-line
- * {@code @ExceptionHandler} method — genuinely repeated code, and an
- * Open/Closed Principle violation (adding a new simple exception meant
- * modifying this class rather than extending it). Those are now one-line
- * entries in {@link #SIMPLE_STATUS_MAPPINGS}, resolved by a single handler.
- * <p>
- * Exceptions with real custom behavior — a display title, server-side
- * logging, a message that deliberately doesn't echo {@code ex.getMessage()},
- * or extra {@code ProblemDetail} properties — keep their own explicit
- * handler below, exactly as before. Nothing about their behavior changed;
- * only the ~37 purely mechanical mappings were consolidated.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    /**
-     * Registry of exceptions that map straight to an HTTP status using
-     * {@code ex.getMessage()} as the detail, with no other behavior.
-     * Adding a new exception in this category is a one-line entry here —
-     * no new handler method needed.
-     * <p>
-     * Typed to {@code RuntimeException} because every exception in this
-     * mapping is unchecked. The one checked exception in this codebase,
-     * {@link DuplicateTransactionCheckException}, can't be typed into this
-     * map and keeps its own handler below for that reason alone — its
-     * actual handling (status + {@code ex.getMessage()}) is identical in
-     * shape to everything in this registry.
-     */
     private static final Map<Class<? extends RuntimeException>, HttpStatus> SIMPLE_STATUS_MAPPINGS = Map.ofEntries(
             Map.entry(AccountNotVerifiedException.class, HttpStatus.FORBIDDEN),
             Map.entry(IncorrectPinException.class, HttpStatus.UNAUTHORIZED),
@@ -98,9 +67,6 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleMappedRuntimeException(RuntimeException ex) {
         HttpStatus status = SIMPLE_STATUS_MAPPINGS.get(ex.getClass());
         if (status == null) {
-            // Not one of our recognized, simply-mapped exceptions (e.g. an
-            // NPE or other unexpected bug) — fall back to exactly the same
-            // handling as any other unanticipated error.
             return buildUnexpectedErrorResponse(ex);
         }
         return ProblemDetail.forStatusAndDetail(status, ex.getMessage());
@@ -139,16 +105,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    /**
-     * Catches any DataAccessException that escapes uncaught from anywhere
-     * in the app - connection pool exhaustion, CannotCreateTransactionException
-     * when Postgres itself is unreachable, query timeouts, etc. - including
-     * the exact window KeepAliveJob#pingDatabase exists to shrink. Without
-     * this, that kind of infrastructure failure surfaces as a misleading
-     * 500 ("something is broken in your request") instead of a 503 ("the
-     * service itself is temporarily down"). Same reasoning as
-     * internal-auth-server's identical handler.
-     */
     @ExceptionHandler(DataAccessException.class)
     public ProblemDetail handleDataAccessException(DataAccessException ex) {
         log.error("Database connectivity failure", ex);

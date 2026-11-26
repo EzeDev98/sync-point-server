@@ -15,30 +15,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
-/**
- * Pings this service's OWN public URL every 3 minutes, so Render sees
- * ongoing inbound traffic and never spins the instance down for
- * inactivity — with no dependency on anyone having the app open (contrast
- * the client's own keepAlive.ts, which does the same thing but only while
- * a browser tab actually has it open).
- *
- * <p>MUST go over the public internet, not localhost: Render's idle
- * detector watches its own reverse proxy for inbound requests, not
- * anything happening purely inside the container's own network namespace.
- * A loopback call would compile, run, and do nothing whatsoever to
- * prevent a spin-down. That's why this reads {@code base-url} — set
- * BASE_URL in Render's dashboard to this service's real
- * https://*.onrender.com address, or this job is a no-op in production
- * (it'll just ping localhost forever).
- *
- * <p>LIMIT, stated plainly: this can only keep an ALREADY-RUNNING instance
- * warm. Nothing can run a @Scheduled method on an instance that has
- * already spun down — there is no process alive to run it. The very
- * first request after a genuine cold start (right after a deploy, or
- * after Render restarts the instance for any other reason) still pays
- * the cold-start cost; this only stops every SUBSEQUENT spin-down once
- * it's running.
- */
 @Slf4j
 @Component
 public class KeepAliveJob {
@@ -56,13 +32,6 @@ public class KeepAliveJob {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    /**
-     * fixedRate, not fixedDelay: this should fire every 3 minutes on the
-     * clock regardless of how long the previous ping took, not 3 minutes
-     * after the previous one FINISHED — the two only differ under a slow
-     * or hanging request, and fixedRate is the one that actually keeps a
-     * steady cadence of inbound traffic for Render to see.
-     */
     @Scheduled(fixedRate = 180_000)
     public void ping() {
         URI uri = URI.create(baseUrl + "/" + apiTitle + "/keep-alive");
@@ -75,10 +44,6 @@ public class KeepAliveJob {
             HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
             log.debug("Self-ping to {} returned {}", uri, response.statusCode());
         } catch (IOException e) {
-            // Fire-and-forget, same reasoning as the client's own keep-alive
-            // ping — a failed self-ping (instance still booting, brief
-            // network hiccup) isn't worth doing anything about beyond
-            // trying again in 3 minutes.
             log.warn("Self-ping to {} failed", uri, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -86,25 +51,6 @@ public class KeepAliveJob {
         }
     }
 
-    /**
-     * Neon's free-tier compute auto-suspends after 5 minutes with no
-     * queries - Postgres, not Render, and a completely separate resource
-     * from the HTTP ping above (which only keeps the Render web service
-     * itself warm). A suspended compute's first query after suspension
-     * pays a resume delay - usually a couple seconds, but enough on a bad
-     * day to tip over Hikari's connection-timeout and surface as the
-     * DataAccessException -> 503 "temporarily unavailable" response (see
-     * GlobalExceptionHandler#handleDataAccessException). SELECT 1 is the
-     * cheapest query that still counts as real activity to Neon, run on
-     * the same 3-minute cadence as the HTTP ping so the compute never
-     * sits idle long enough to suspend.
-     *
-     * <p>This burns real Neon compute-hours continuously instead of only
-     * during actual use - acceptable on a project dedicated to active
-     * testing, but worth knowing: Neon's free-tier compute-hour quota is
-     * per-project, not pooled across an account, so this only eats into
-     * THIS project's own monthly allowance, not any other app's.
-     */
     @Scheduled(fixedRate = 180_000)
     public void pingDatabase() {
         try {

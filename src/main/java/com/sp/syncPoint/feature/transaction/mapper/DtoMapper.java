@@ -15,17 +15,6 @@ import java.util.stream.Collectors;
 @Component
 public class DtoMapper {
 
-    /**
-     * Map a SyncTransactionRequest to a Transaction entity skeleton.
-     *
-     * entryType is intentionally NOT set here — the service sets it explicitly
-     * per entry (DEBIT for sender, CREDIT for receiver) after calling this method.
-     *
-     * Fix issue #22: senderName and receiverName are now populated from the DTO
-     * (they were always on the entity but the DTO fields didn't exist before).
-     *
-     * Fix issue #9: createdAt is now Instant — timezone-safe.
-     */
     public Transaction mapToTransaction(SyncTransactionRequest request) {
         Transaction transaction = new Transaction();
 
@@ -50,14 +39,6 @@ public class DtoMapper {
         return transaction;
     }
 
-    /**
-     * Build a single-entry {@link Transaction} (DEBIT or CREDIT) for a P2P
-     * transfer, starting from {@link #mapToTransaction} and stamping the entry
-     * type, status, and optional failure reason. Moved verbatim from
-     * {@code TransactionSyncServiceImpl} during the phase-2
-     * separation-of-concerns pass so all request-to-entity construction lives
-     * in the mapper.
-     */
     public Transaction buildEntry(SyncTransactionRequest request, EntryType entryType, TransactionStatus status, String failureReason) {
         Transaction transaction = mapToTransaction(request);
         transaction.setEntryType(entryType);

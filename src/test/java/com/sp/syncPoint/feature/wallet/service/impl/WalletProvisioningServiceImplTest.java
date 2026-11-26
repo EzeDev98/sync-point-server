@@ -45,8 +45,6 @@ class WalletProvisioningServiceImplTest {
     @Mock
     private TransactionRepository transactionRepo;
 
-    // Real factory over the still-mocked collaborators, so the existing
-    // generateWalletId()/createTransaction() stubs keep driving behaviour.
     private WalletFactory walletFactory;
 
     private WalletProvisioningServiceImpl service;
@@ -150,8 +148,6 @@ class WalletProvisioningServiceImplTest {
         assertThat(savedWallet.getPhoneNumber()).isEqualTo("08010000001");
         assertThat(savedWallet.getMirrorBalance()).isEqualByComparingTo("1000000");
 
-        // System wallet debited by the funded amount, liability/disbursed/user
-        // counters incremented — this is the "treasury accounting" invariant.
         assertThat(systemWallet.getAvailableBalance()).isEqualByComparingTo("4000000.00");
         assertThat(systemWallet.getCurrentLiability()).isEqualByComparingTo("1000000");
         assertThat(systemWallet.getTotalDisbursed()).isEqualByComparingTo("1000000");

@@ -11,16 +11,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-/**
- * Mirrors PasswordResetOtp's shape but tracks the OTP lifecycle for a wallet
- * PIN reset instead of an account password reset. Kept as a separate table
- * (rather than reusing password_reset_otps with a "purpose" column) so the
- * already-working password reset flow isn't touched by this addition.
- *
- * Reuses the existing, purpose-agnostic PasswordResetStatus enum
- * (ACTIVE/VERIFIED/EXPIRED/INVALIDATED) since those values aren't
- * password-specific.
- */
 @Getter
 @Setter
 @NoArgsConstructor

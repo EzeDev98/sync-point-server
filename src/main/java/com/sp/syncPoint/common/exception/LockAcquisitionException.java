@@ -1,8 +1,5 @@
 package com.sp.syncPoint.common.exception;
 
-/**
- * Thrown when a distributed lock cannot be acquired within the timeout.
- */
 public class LockAcquisitionException extends RuntimeException {
     public LockAcquisitionException(String message) {
         super(message);

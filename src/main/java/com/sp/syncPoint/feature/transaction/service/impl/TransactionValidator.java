@@ -9,15 +9,6 @@ import static com.sp.syncPoint.common.constants.GeneralConstants.CURRENCY;
 import static com.sp.syncPoint.common.constants.GeneralConstants.MAX_TRANSACTION_AMOUNT;
 import static java.math.BigDecimal.ZERO;
 
-/**
- * Validates offline-queued P2P transfer requests, ahead of the
- * ownership/idempotency/locking checks in
- * {@code TransactionSyncServiceImpl.validateTransactionRequest}.
- * <p>
- * Extracted from the original {@code ValidateService} grab-bag as part of
- * the SOLID refactor — used only by {@code TransactionSyncServiceImpl}.
- * No rule changed during the move.
- */
 @Component
 public class TransactionValidator {
 
@@ -56,19 +47,6 @@ public class TransactionValidator {
         }
     }
 
-    /**
-     * Transfer-level rules checked after {@link #validateTransaction} and the
-     * caller's ownership assertion: receiver presence, positive amount,
-     * distinct sender/receiver, supported currency, and reconciliation ref.
-     * <p>
-     * Moved verbatim from {@code TransactionSyncServiceImpl.validateTransactionRequest}
-     * during the phase-2 separation-of-concerns pass. Only the sender-phone and
-     * ownership checks stayed behind — the former is already covered by
-     * {@link #validateTransaction}, the latter is an authorization concern the
-     * service still performs (in the same order as before). No rule or message
-     * changed. {@code senderPhone} is guaranteed non-null here by the prior
-     * {@link #validateTransaction} call.
-     */
     public void validateTransferRules(SyncTransactionRequest request) {
         if (request.getReceiverPhone() == null || request.getReceiverPhone().isBlank()) {
             throw new BadRequestException("Receiver phone number is required");

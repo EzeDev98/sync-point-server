@@ -29,19 +29,6 @@ import java.util.Optional;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.*;
 
-
-/**
- * Provisions and capitalizes a new wallet from the system treasury wallet.
- * <p>
- * Extracted from the original {@code WalletServiceImpl} god class as part
- * of the earlier SOLID refactor. In the phase-2 separation-of-concerns pass
- * the entity construction (the new wallet, its capitalization transaction,
- * and the funding record) moved to {@link WalletFactory}; this class now
- * owns only the orchestration — validation, the treasury debit and its
- * accounting invariants, and persistence. Login lives in
- * {@link WalletAuthServiceImpl}, PIN management in
- * {@link WalletPinServiceImpl}; no behaviour changed during any split.
- */
 @Service
 @RequiredArgsConstructor
 public class WalletProvisioningServiceImpl implements WalletProvisioningService {
@@ -93,10 +80,6 @@ public class WalletProvisioningServiceImpl implements WalletProvisioningService 
             throw e;
         }
     }
-
-    // ─────────────────────────────────────────────
-    // ORCHESTRATION
-    // ─────────────────────────────────────────────
 
     private Wallet createNewWallet(BigDecimal amount, User user) {
 

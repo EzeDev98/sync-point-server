@@ -12,11 +12,8 @@ import com.sp.syncPoint.feature.wallet.repository.WalletRepository;
 import com.sp.syncPoint.feature.wallet.service.WalletPinService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,21 +21,6 @@ import java.time.LocalDateTime;
 
 import static com.sp.syncPoint.common.constants.GeneralConstants.MAX_PIN_CHANGE_ATTEMPTS;
 
-
-/**
- * Full lifecycle of a wallet's transaction PIN: initial set, authenticated
- * change, OTP-verified reset, and verification.
- * <p>
- * Extracted from the original {@code WalletServiceImpl} god class as part
- * of the earlier SOLID refactor. In the phase-2 separation-of-concerns
- * pass this class was slimmed to pure orchestration — the cryptographic
- * detail moved to {@link PinHasher}, the format/strength rules to
- * {@link PinValidator}, and the lock-state mechanics to
- * {@link WalletLockoutService}. It decides the flow; the collaborators
- * decide the details. Wallet provisioning lives in
- * {@link WalletProvisioningServiceImpl}, login in
- * {@link WalletAuthServiceImpl}; no behaviour changed during any split.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -244,12 +226,6 @@ public class WalletPinServiceImpl implements WalletPinService {
         return pinHasher.matches(unverifiedPin, wallet.getPin());
     }
 
-    /**
-     * Overwrites a wallet's PIN as part of the OTP-verified PIN-reset flow.
-     * Skips the "PIN already set" guard (the whole point here is
-     * overwriting a forgotten one) and requires no old PIN, since
-     * PinResetServiceImpl has already proven ownership via OTP.
-     */
     @Transactional
     @Override
     public void resetPin(String phoneNumber, String newPin, String confirmNewPin) {

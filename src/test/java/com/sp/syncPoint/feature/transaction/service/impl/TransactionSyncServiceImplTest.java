@@ -33,26 +33,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-/**
- * Unit tests for the batch sync engine under signature-authorized, audit-only
- * settlement.
- * <p>
- * Two things define this suite's shape:
- * <ul>
- *   <li><b>Authorization is a signature, not caller ownership.</b> There is no
- *       {@code CurrentUserService} anymore; the collaborator is
- *       {@link TransferSignatureVerifier}, mocked here so each test declares
- *       whether the transfer's signature verifies.</li>
- *   <li><b>Sync is audit-only.</b> A P2P transfer moves value between two
- *       device ledgers, not between mirrors, so a successful sync records the
- *       DEBIT + CREDIT but saves no wallet and moves no mirror balance —
- *       neither the sender's nor the receiver's. There is no server-side
- *       insufficient-balance path either: an amount larger than the sender's
- *       mirror is still recorded, because the mirror is not the source of an
- *       offline spend.</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 class TransactionSyncServiceImplTest {
 
@@ -71,11 +51,7 @@ class TransactionSyncServiceImplTest {
     @Mock
     private TransferSignatureVerifier signatureVerifier;
 
-    // DtoMapper has no dependencies, so we use the real implementation
-    // rather than mocking it — this exercises the actual mapping logic too.
     private final DtoMapper mapper = new DtoMapper();
-    // Real assembler over the real mapper, so response-shape assertions
-    // (counts, description, data map) still exercise the actual logic.
     private final TransactionResponseAssembler responseAssembler = new TransactionResponseAssembler(mapper);
 
     private TransactionSyncServiceImpl service;
@@ -127,7 +103,6 @@ class TransactionSyncServiceImplTest {
         return request;
     }
 
-    /** Stubs a valid signature for the (mocked) verifier. */
     private void signatureIsValid() {
         when(signatureVerifier.verify(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(true);
@@ -167,8 +142,6 @@ class TransactionSyncServiceImplTest {
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
-        // Audit-only: neither mirror moves, and no wallet is saved. The two
-        // ledger records are still persisted.
         assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
         assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000.00");
 
@@ -186,10 +159,6 @@ class TransactionSyncServiceImplTest {
 
     @Test
     void syncTransactions_amountExceedsSenderMirror_stillRecorded() {
-        // The server does not re-check sender funds — that is the client's
-        // responsibility. An amount larger than the sender's mirror is still
-        // recorded: the mirror is not the source of an offline spend, and the
-        // sync moves no balance either way.
         SyncTransactionRequest request = validRequest();
         request.setAmount(new BigDecimal("999999.00"));
 
@@ -228,7 +197,6 @@ class TransactionSyncServiceImplTest {
 
         BaseResponse response = service.syncTransactions(List.of(request));
 
-        // Nothing persisted, no balance moved, locks still released.
         assertThat(senderWallet.getMirrorBalance()).isEqualByComparingTo("5000.00");
         assertThat(receiverWallet.getMirrorBalance()).isEqualByComparingTo("1000.00");
         verify(transactionRepository, never()).saveAll(anyList());
@@ -245,8 +213,6 @@ class TransactionSyncServiceImplTest {
 
     @Test
     void syncTransactions_senderWalletDoesNotMatchSignedSender_rejected() {
-        // The wallet reached via senderPhone is not the signed sender wallet —
-        // an attempt to borrow a signature from a different sender.
         SyncTransactionRequest request = validRequest();
         senderWallet.setWalletId("WM-SOMEONE-ELSE");
 
@@ -270,8 +236,6 @@ class TransactionSyncServiceImplTest {
 
     @Test
     void syncTransactions_receiverWalletDoesNotMatchSignedReceiver_rejected() {
-        // Redirection attempt: a valid "pay WM-RECEIVER" signature pointed at a
-        // wallet reached via a different receiverPhone.
         SyncTransactionRequest request = validRequest();
         receiverWallet.setWalletId("WM-SOMEONE-ELSE");
 
@@ -298,8 +262,6 @@ class TransactionSyncServiceImplTest {
 
         when(idempotencyValidator.getProcessedTransactions(anyList())).thenReturn(List.of());
         when(lockService.acquireAllLocks(anyList())).thenReturn(List.of("08010000001", "08010000002"));
-        // Simulates a concurrent request having already applied this transactionRef
-        // between the outer pre-filter and lock acquisition (TOCTOU).
         when(transactionRepository.existsByTransactionReference("TXN-1")).thenReturn(true);
 
         BaseResponse response = service.syncTransactions(List.of(request));
@@ -322,9 +284,6 @@ class TransactionSyncServiceImplTest {
         when(walletRepository.findByPhoneNumberWithLock("08010000001")).thenReturn(Optional.of(senderWallet));
         when(walletRepository.findByPhoneNumberWithLock("08010000002")).thenReturn(Optional.empty());
 
-        // processSingleTransfer throws internally (receiver wallet not found); the
-        // outer loop catches it per-request and records a failure, but the lock
-        // must still be released via the finally block either way.
         service.syncTransactions(List.of(request));
 
         verify(lockService).releaseAllLocks(List.of("08010000001", "08010000002"));
@@ -336,8 +295,6 @@ class TransactionSyncServiceImplTest {
 
         doThrow(new BadRequestException("Sender and receiver cannot be the same"))
                 .when(transactionValidator).validateTransaction(request);
-        // validateTransaction runs first in the loop and short-circuits the whole
-        // batch before any idempotency lookup or locking.
 
         assertThatThrownBy(() -> service.syncTransactions(List.of(request)))
                 .isInstanceOf(BadRequestException.class);

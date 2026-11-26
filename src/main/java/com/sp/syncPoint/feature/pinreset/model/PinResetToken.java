@@ -10,12 +10,6 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-/**
- * Short-lived, single-use, purpose-specific token authorizing exactly one
- * PIN-reset completion call. Mirrors PasswordResetToken but is scoped to
- * wallet PIN reset — kept separate so the password reset token table and
- * its semantics stay untouched.
- */
 @Getter
 @Setter
 @NoArgsConstructor
